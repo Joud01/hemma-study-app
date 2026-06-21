@@ -27,14 +27,14 @@ exports.handler = async function(event) {
   ];
 
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer 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'
+        'Authorization': 'Bearer EoWXmAosG0SSZJZTb8bX7TtIoBfHoH76'
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-r1:free',
+        model: 'mistral-small-latest',
         messages,
         max_tokens: maxTokens
       })
@@ -42,7 +42,7 @@ exports.handler = async function(event) {
     const data = await res.json();
     if (!res.ok) {
       return { statusCode: res.status, headers: { ...cors, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: data.error?.message || 'OpenRouter error' }) };
+        body: JSON.stringify({ error: data.error?.message || data.message || 'Mistral error' }) };
     }
     const text = data.choices?.[0]?.message?.content || '';
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' },

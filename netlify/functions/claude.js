@@ -34,7 +34,7 @@ exports.handler = async function(event) {
         'Authorization': 'Bearer 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'
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat-v3-0324:free',
+        model: 'meta-llama/llama-4-scout:free',
         messages,
         max_tokens: maxTokens
       })

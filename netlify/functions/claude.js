@@ -27,14 +27,14 @@ exports.handler = async function(event) {
   ];
 
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer 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'
+        'Authorization': 'Bearer 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'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'google/gemini-2.0-flash-exp:free',
         messages,
         max_tokens: maxTokens
       })
@@ -42,7 +42,7 @@ exports.handler = async function(event) {
     const data = await res.json();
     if (!res.ok) {
       return { statusCode: res.status, headers: { ...cors, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: data.error?.message || 'Groq error' }) };
+        body: JSON.stringify({ error: data.error?.message || 'OpenRouter error' }) };
     }
     const text = data.choices?.[0]?.message?.content || '';
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' },

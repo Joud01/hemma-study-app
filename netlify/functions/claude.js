@@ -19,11 +19,12 @@ exports.handler = async function(event) {
   }
 
   const { prompt, system, maxTokens = 4000 } = body;
+  const safePrompt = prompt && prompt.length > 20000 ? prompt.slice(0, 20000) + '\n\n[النص مقتطع لحجمه]' : prompt;
 
   const systemContent = 'أنت مساعد دراسة ذكي. يجب أن تجيب باللغة العربية فقط دائماً بدون استثناء.\n\n' + (system || '');
   const messages = [
     { role: 'system', content: systemContent },
-    { role: 'user', content: prompt || '' }
+    { role: 'user', content: safePrompt || '' }
   ];
 
   try {
@@ -34,7 +35,7 @@ exports.handler = async function(event) {
         'Authorization': 'Bearer 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'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages,
         max_tokens: maxTokens
       })

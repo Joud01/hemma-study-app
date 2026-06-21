@@ -1,733 +1,3399 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>همّة | مساعد الدراسة الذكي</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked@9.0.0/marked.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background: #f0f4ff;
-      color: #1e293b;
-      min-height: 100vh;
-    }
-
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      padding: 1.25rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 4px 24px rgba(79,70,229,.35);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo-wrap { display: flex; align-items: center; gap: .75rem; }
-    .logo-icon { font-size: 2rem; }
-    .logo-text { font-size: 1.7rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
-    .logo-sub { font-size: .8rem; color: rgba(255,255,255,.75); margin-top: .1rem; }
-    .header-badge {
-      background: rgba(255,255,255,.15);
-      color: #fff;
-      font-size: .78rem;
-      padding: .35rem .9rem;
-      border-radius: 20px;
-      backdrop-filter: blur(6px);
-    }
-
-    /* ── Views ── */
-    .view { display: none; animation: fadeIn .3s ease; }
-    .view.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-    /* ── Upload view ── */
-    .upload-wrap {
-      max-width: 680px;
-      margin: 3.5rem auto;
-      padding: 0 1.25rem;
-    }
-    .upload-card {
-      background: #fff;
-      border-radius: 24px;
-      padding: 2.75rem 2.25rem;
-      box-shadow: 0 12px 48px rgba(79,70,229,.1);
-      text-align: center;
-    }
-    .upload-hero { font-size: 3.5rem; margin-bottom: 1rem; }
-    .upload-title { font-size: 1.65rem; font-weight: 800; color: #1e293b; margin-bottom: .6rem; }
-    .upload-desc { font-size: .95rem; color: #64748b; line-height: 1.75; margin-bottom: 2rem; }
-
-    .drop-zone {
-      border: 2.5px dashed #c7d2fe;
-      border-radius: 16px;
-      padding: 2.25rem 1.5rem;
-      cursor: pointer;
-      transition: all .2s;
-      background: #f8f9ff;
-      position: relative;
-    }
-    .drop-zone:hover, .drop-zone.over { border-color: #6366f1; background: #eef0ff; }
-    .drop-zone input[type="file"] {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-    }
-    .drop-icon { font-size: 2.25rem; margin-bottom: .6rem; }
-    .drop-label { font-size: 1rem; font-weight: 700; color: #6366f1; }
-    .drop-sub { font-size: .82rem; color: #94a3b8; margin-top: .35rem; }
-
-    .divider {
-      display: flex; align-items: center; gap: 1rem;
-      margin: 1.5rem 0; color: #94a3b8; font-size: .88rem;
-    }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
-
-    textarea.text-input {
-      width: 100%; min-height: 140px;
-      border: 2px solid #e2e8f0; border-radius: 14px;
-      padding: 1rem 1.1rem;
-      font-family: 'Tajawal', sans-serif; font-size: .95rem;
-      color: #1e293b; resize: vertical; transition: border-color .2s;
-      background: #fff;
-    }
-    textarea.text-input:focus { outline: none; border-color: #6366f1; }
-    textarea.text-input::placeholder { color: #b0bec5; }
-
-    .file-chosen {
-      margin-top: .75rem; font-size: .9rem; font-weight: 600;
-      color: #6366f1; text-align: right; min-height: 1.4rem;
-    }
-
-    .btn-primary {
-      margin-top: 1.5rem; width: 100%;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff; border: none;
-      padding: .95rem 2rem; border-radius: 14px;
-      font-family: 'Tajawal', sans-serif; font-size: 1.05rem; font-weight: 800;
-      cursor: pointer; transition: all .25s;
-      box-shadow: 0 6px 20px rgba(79,70,229,.35);
-    }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(79,70,229,.45); }
-    .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-
-    /* ── Loading view ── */
-    .loading-wrap {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 65vh; text-align: center; padding: 2rem;
-    }
-    .spinner {
-      width: 62px; height: 62px;
-      border: 5px solid #e2e8f0; border-top-color: #6366f1;
-      border-radius: 50%; animation: spin .75s linear infinite;
-      margin-bottom: 1.75rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-title { font-size: 1.25rem; font-weight: 700; color: #334155; }
-    .loading-hint { font-size: .88rem; color: #94a3b8; margin-top: .5rem; }
-
-    /* ── Dashboard ── */
-    .dash-wrap { max-width: 880px; margin: 2rem auto 4rem; padding: 0 1.25rem; }
-
-    .info-bar {
-      background: #fff; border-radius: 14px; padding: .9rem 1.5rem;
-      margin-bottom: 1.25rem;
-      display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 2px 12px rgba(0,0,0,.06);
-    }
-    .info-bar-name { font-weight: 700; color: #334155; font-size: .95rem; }
-    .btn-new {
-      background: none; border: 2px solid #6366f1; color: #6366f1;
-      padding: .45rem 1.1rem; border-radius: 10px;
-      font-family: 'Tajawal', sans-serif; font-size: .88rem; font-weight: 700;
-      cursor: pointer; transition: all .2s;
-    }
-    .btn-new:hover { background: #6366f1; color: #fff; }
-
-    .tabs {
-      background: #fff; border-radius: 16px; padding: .45rem;
-      display: flex; gap: .4rem; margin-bottom: 1.5rem;
-      box-shadow: 0 2px 12px rgba(0,0,0,.06);
-    }
-    .tab-btn {
-      flex: 1; padding: .75rem .5rem; border: none; border-radius: 12px;
-      background: none; font-family: 'Tajawal', sans-serif;
-      font-size: .95rem; font-weight: 700; color: #64748b;
-      cursor: pointer; transition: all .2s;
-      display: flex; align-items: center; justify-content: center; gap: .35rem;
-    }
-    .tab-btn.active {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff; box-shadow: 0 4px 14px rgba(79,70,229,.35);
-    }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; animation: fadeIn .25s ease; }
-
-    .card {
-      background: #fff; border-radius: 18px; padding: 2rem;
-      box-shadow: 0 2px 14px rgba(0,0,0,.06);
-    }
-
-    /* ── Markdown ── */
-    .md h2 { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin: 1.2rem 0 .5rem; border-bottom: 2px solid #e0e7ff; padding-bottom: .4rem; }
-    .md h3 { font-size: 1.05rem; font-weight: 700; color: #3730a3; margin: 1rem 0 .4rem; }
-    .md p { line-height: 1.85; color: #334155; margin: .5rem 0; }
-    .md ul, .md ol { margin: .5rem 0 .5rem 1.75rem; }
-    .md li { line-height: 1.8; color: #334155; margin: .3rem 0; }
-    .md strong { color: #1e293b; font-weight: 800; }
-    .md em { color: #7c3aed; font-style: normal; font-weight: 700; }
-    .md code { background: #f1f5f9; padding: .1rem .4rem; border-radius: 5px; font-size: .88em; }
-
-    /* ── Quiz ── */
-    .btn-gen {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff; border: none; padding: .75rem 2rem;
-      border-radius: 12px; font-family: 'Tajawal', sans-serif;
-      font-size: 1rem; font-weight: 800; cursor: pointer;
-      box-shadow: 0 4px 14px rgba(79,70,229,.35);
-      transition: all .2s; margin-bottom: 1.5rem;
-    }
-    .btn-gen:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(79,70,229,.45); }
-    .btn-gen:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-
-    .quiz-item {
-      border: 2px solid #e2e8f0; border-radius: 14px; padding: 1.25rem;
-      margin-bottom: 1rem; transition: border-color .2s; background: #fafbff;
-    }
-    .quiz-item:hover { border-color: #c7d2fe; }
-    .quiz-q { font-weight: 700; color: #1e293b; line-height: 1.65; margin-bottom: .75rem; }
-    .btn-ans {
-      border: 1.5px solid #6366f1; background: none; color: #6366f1;
-      padding: .4rem 1.1rem; border-radius: 9px;
-      font-family: 'Tajawal', sans-serif; font-size: .85rem; font-weight: 700;
-      cursor: pointer; transition: all .2s;
-    }
-    .btn-ans:hover { background: #6366f1; color: #fff; }
-    .quiz-ans {
-      display: none; margin-top: .85rem; padding: .85rem 1.1rem;
-      background: #ede9fe; border-radius: 10px; color: #5b21b6;
-      font-size: .93rem; line-height: 1.7;
-    }
-    .quiz-ans.show { display: block; animation: fadeIn .2s ease; }
-
-    .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
-    .empty-state .eicon { font-size: 3rem; margin-bottom: .75rem; }
-    .empty-state p { font-size: .93rem; }
-
-    /* ── Chat ── */
-    .chat-box {
-      min-height: 340px; max-height: 440px; overflow-y: auto;
-      border: 2px solid #e2e8f0; border-radius: 14px; padding: 1rem;
-      display: flex; flex-direction: column; gap: 1rem;
-      background: #f8f9ff; margin-bottom: 1rem;
-    }
-    .msg { display: flex; gap: .75rem; }
-    .msg.user { flex-direction: row-reverse; }
-    .avatar {
-      width: 38px; height: 38px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.15rem; flex-shrink: 0;
-    }
-    .msg.user .avatar { background: #4f46e5; }
-    .msg.ai .avatar { background: #ede9fe; }
-    .bubble {
-      max-width: 78%; padding: .8rem 1.1rem; border-radius: 16px;
-      font-size: .93rem; line-height: 1.75;
-    }
-    .msg.user .bubble {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff; border-bottom-left-radius: 4px;
-    }
-    .msg.ai .bubble {
-      background: #fff; color: #334155;
-      border: 1.5px solid #e2e8f0; border-bottom-right-radius: 4px;
-    }
-    .chat-row { display: flex; gap: .75rem; }
-    .chat-in {
-      flex: 1; border: 2px solid #e2e8f0; border-radius: 13px;
-      padding: .8rem 1rem; font-family: 'Tajawal', sans-serif;
-      font-size: .93rem; color: #1e293b; transition: border-color .2s; background: #fff;
-    }
-    .chat-in:focus { outline: none; border-color: #6366f1; }
-    .btn-send {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff; border: none; padding: .8rem 1.5rem;
-      border-radius: 13px; font-family: 'Tajawal', sans-serif;
-      font-size: .95rem; font-weight: 800; cursor: pointer;
-      box-shadow: 0 4px 14px rgba(79,70,229,.35); transition: all .2s;
-    }
-    .btn-send:hover:not(:disabled) { transform: translateY(-1px); }
-    .btn-send:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-
-    .dots span { animation: blink 1.2s infinite; display: inline-block; }
-    .dots span:nth-child(2) { animation-delay: .2s; }
-    .dots span:nth-child(3) { animation-delay: .4s; }
-    @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
-
-    @media (max-width: 600px) {
-      .tabs { flex-direction: column; }
-      .upload-card { padding: 2rem 1.25rem; }
-      .dash-wrap { padding: 0 .9rem; }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>همّة — مرافق مذاكرة ذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Markazi+Text:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  #root { min-height: 100vh; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 </head>
 <body>
-
-<!-- ── Header ── -->
-<header class="header">
-  <div class="logo-wrap">
-    <div class="logo-icon">📚</div>
-    <div>
-      <div class="logo-text">همّة</div>
-      <div class="logo-sub">رفيقك في رحلة المذاكرة</div>
-    </div>
-  </div>
-  <div class="header-badge">✨ مدعوم بالذكاء الاصطناعي</div>
-</header>
-
-<!-- ── View: Upload ── -->
-<div id="v-upload" class="view active">
-  <div class="upload-wrap">
-    <div class="upload-card">
-      <div class="upload-hero">🎓</div>
-      <h1 class="upload-title">ابدأ مذاكرتك الذكية</h1>
-      <p class="upload-desc">ارفع ملف دراستك أو الصق النص، وسأساعدك على الفهم العميق وتوليد الأسئلة والمناقشة</p>
-
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="fileInput" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp" />
-        <div class="drop-icon">📂</div>
-        <div class="drop-label">اسحب الملف هنا أو انقر للاختيار</div>
-        <div class="drop-sub">PDF • صور (JPG, PNG) • ملفات نصية</div>
-      </div>
-
-      <div class="divider">أو</div>
-
-      <textarea
-        id="textInput"
-        class="text-input"
-        placeholder="الصق نص المادة الدراسية هنا مباشرة...&#10;مثال: محاضرة، مقالة، ملاحظات دراسية"
-      ></textarea>
-
-      <div class="file-chosen" id="fileChosen"></div>
-
-      <button class="btn-primary" id="startBtn" onclick="startAnalysis()" disabled>
-        ابدأ التحليل ✨
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ── View: Loading ── -->
-<div id="v-loading" class="view">
-  <div class="loading-wrap">
-    <div class="spinner"></div>
-    <div class="loading-title" id="loadingText">جاري تحليل المادة...</div>
-    <div class="loading-hint">قد يستغرق هذا لحظات، تحلّ بالصبر 🌟</div>
-  </div>
-</div>
-
-<!-- ── View: Dashboard ── -->
-<div id="v-dash" class="view">
-  <div class="dash-wrap">
-
-    <div class="info-bar">
-      <div class="info-bar-name" id="dashName">📄 المادة المحملة</div>
-      <button class="btn-new" onclick="resetApp()">+ مادة جديدة</button>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('summary', this)">📝 ملخص وأفكار</button>
-      <button class="tab-btn" onclick="switchTab('quiz', this)">🎯 اختبر نفسك</button>
-      <button class="tab-btn" onclick="switchTab('chat', this)">💬 اسأل واستفسر</button>
-    </div>
-
-    <!-- Summary -->
-    <div id="tp-summary" class="tab-panel active">
-      <div class="card">
-        <div id="summaryContent" class="md"></div>
-      </div>
-    </div>
-
-    <!-- Quiz -->
-    <div id="tp-quiz" class="tab-panel">
-      <div class="card">
-        <button class="btn-gen" id="quizBtn" onclick="generateQuiz()">🎲 ولّد أسئلة جديدة</button>
-        <div id="quizContent">
-          <div class="empty-state">
-            <div class="eicon">🎯</div>
-            <p>اضغط على الزر أعلاه لتوليد أسئلة من المادة</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chat -->
-    <div id="tp-chat" class="tab-panel">
-      <div class="card">
-        <div class="chat-box" id="chatBox">
-          <div class="msg ai">
-            <div class="avatar">🤖</div>
-            <div class="bubble">مرحباً! قرأت المادة وأنا جاهز للإجابة على أسئلتك. اسألني عن أي شيء تريد فهمه أو توضيحه 😊</div>
-          </div>
-        </div>
-        <div class="chat-row">
-          <input class="chat-in" id="chatInput" type="text" placeholder="اكتب سؤالك هنا..." onkeydown="if(event.key==='Enter')sendChat()" />
-          <button class="btn-send" id="sendBtn" onclick="sendChat()">إرسال ➤</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
+<div id="root"></div>
 <script>
-// ── PDF.js worker ──────────────────────────────────────────
-if (typeof pdfjsLib !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const {
+  useState,
+  useEffect,
+  useRef,
+  useCallback
+} = React;
+
+/* ============================================================
+   همّة — مرافق مذاكرة ذكي
+   ============================================================ */
+
+// ---------- Storage helpers ----------
+const STORAGE_KEYS = {
+  topics: "hemma:topics",
+  sessions: "hemma:sessions",
+  stats: "hemma:stats",
+  user: "hemma:user",
+  // { name, joinedAt, seenWelcome }
+  lastSession: "hemma:lastSeen",
+  // ISO date string of last completed session
+  mood: "hemma:mood",
+  // { value, date } today's mood check-in
+  distractions: "hemma:distractions",
+  // [{ date, reason, topicTitle }]
+  focusLog: "hemma:focusLog",
+  // [{ date, minutes, topicTitle }]
+  knowledgeProfile: "hemma:knowledgeProfile" // [{ concept, strength: 'weak'|'ok'|'strong', topicTitle, unitTitle, date }]
+};
+
+// ---------- Storage polyfill ----------
+// window.storage exists natively inside Claude.ai Artifacts.
+// When this app is hosted standalone (outside Claude.ai), that API doesn't
+// exist — so we provide a drop-in replacement backed by localStorage with
+// the exact same shape, so every loadData/saveData call below works
+// unchanged in both environments.
+if (!window.storage) {
+  window.storage = {
+    async get(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return null;
+        return {
+          key,
+          value: raw,
+          shared: false
+        };
+      } catch {
+        return null;
+      }
+    },
+    async set(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return {
+          key,
+          value,
+          shared: false
+        };
+      } catch {
+        return null;
+      }
+    },
+    async delete(key) {
+      try {
+        localStorage.removeItem(key);
+        return {
+          key,
+          deleted: true,
+          shared: false
+        };
+      } catch {
+        return null;
+      }
+    },
+    async list(prefix) {
+      try {
+        const keys = Object.keys(localStorage).filter(k => !prefix || k.startsWith(prefix));
+        return {
+          keys,
+          prefix,
+          shared: false
+        };
+      } catch {
+        return null;
+      }
+    }
+  };
 }
-
-// ── State ──────────────────────────────────────────────────
-let studyText   = '';      // extracted text (null if image)
-let studyImg    = null;    // { data: base64, type: 'image/jpeg' }
-let fileName    = '';
-let chatHistory = [];      // [{role,content}]
-
-// ── Helpers ────────────────────────────────────────────────
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tp-' + name).classList.add('active');
-}
-
-function resetApp() {
-  studyText = ''; studyImg = null; fileName = ''; chatHistory = [];
-  document.getElementById('fileInput').value = '';
-  document.getElementById('textInput').value = '';
-  document.getElementById('fileChosen').textContent = '';
-  document.getElementById('startBtn').disabled = true;
-  showView('v-upload');
-}
-
-// ── File selection & drag-drop ─────────────────────────────
-const fileInput = document.getElementById('fileInput');
-const textInput = document.getElementById('textInput');
-const startBtn  = document.getElementById('startBtn');
-const dropZone  = document.getElementById('dropZone');
-
-let _pendingFile = null;
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) selectFile(fileInput.files[0]);
-});
-textInput.addEventListener('input', () => {
-  startBtn.disabled = !textInput.value.trim() && !_pendingFile;
-});
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('over');
-  if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
-});
-
-function selectFile(file) {
-  _pendingFile = file;
-  document.getElementById('fileChosen').textContent = '✅ ' + file.name;
-  startBtn.disabled = false;
-}
-
-// ── Start analysis ─────────────────────────────────────────
-async function startAnalysis() {
-  startBtn.disabled = true;
-  showView('v-loading');
-
+async function loadData(key, fallback) {
   try {
-    if (_pendingFile) {
-      document.getElementById('loadingText').textContent = 'جاري قراءة الملف...';
-      await readFile(_pendingFile);
-    } else if (textInput.value.trim()) {
-      studyText = textInput.value.trim();
-      fileName  = 'نص مباشر';
-    } else {
-      throw new Error('لا يوجد محتوى');
+    const res = await window.storage.get(key, false);
+    if (res && res.value) return JSON.parse(res.value);
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+async function saveData(key, value) {
+  try {
+    await window.storage.set(key, JSON.stringify(value), false);
+  } catch (e) {
+    console.error("storage error", e);
+  }
+}
+
+// ---------- API endpoint configuration ----------
+// While testing inside Claude.ai (this Artifact), requests go directly to
+// Anthropic and authenticate automatically — no key needed here.
+//
+// FOR PRODUCTION DEPLOYMENT (real students, hosted outside Claude.ai):
+// 1. Deploy the Cloudflare Worker in /cloudflare-proxy
+// 2. Replace the line below with your worker's URL, e.g.:
+//    const API_ENDPOINT = "https://hemma-proxy.YOUR_SUBDOMAIN.workers.dev";
+const API_ENDPOINT = "/api/claude";
+
+// ---------- Per-device ID (used only for rate limiting behind the proxy) ----------
+function getDeviceId() {
+  try {
+    let id = window.localStorage ? window.localStorage.getItem("hemma_device_id") : null;
+    if (!id) {
+      id = "dev_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+      if (window.localStorage) window.localStorage.setItem("hemma_device_id", id);
+    }
+    return id;
+  } catch {
+    return "dev_unknown";
+  }
+}
+
+// ---------- Claude API helper ----------
+async function callClaude(promptText, systemText, options = {}) {
+  const maxTokens = options.maxTokens || 4000;
+  const timeoutMs = options.timeoutMs || 60000; // 60s ceiling
+  const maxRetries = options.maxRetries != null ? options.maxRetries : 2;
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: maxTokens,
+    messages: [{
+      role: "user",
+      content: promptText
+    }]
+  };
+  if (systemText) body.system = systemText;
+
+  // When pointed at the proxy, the proxy expects { prompt, system, maxTokens } instead
+  // of the raw Anthropic shape — this keeps the proxy simple and endpoint-agnostic on its end.
+  const isProxy = API_ENDPOINT !== "https://api.anthropic.com/v1/messages";
+  const requestBody = isProxy ? {
+    prompt: promptText,
+    system: systemText,
+    maxTokens
+  } : body;
+  let lastError = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Each attempt gets its own timeout controller
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": getDeviceId()
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) {
+        // Surface rate-limit messages from the proxy directly to the caller
+        if (res.status === 429) {
+          let detail = null;
+          try {
+            detail = await res.json();
+          } catch {}
+          if (detail && detail.message) throw new Error(detail.message);
+          if (attempt < maxRetries) {
+            lastError = new Error("HTTP 429");
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            continue;
+          }
+        }
+        // Retry on transient server errors; fail fast on other client errors
+        if (res.status >= 500 && attempt < maxRetries) {
+          lastError = new Error("HTTP " + res.status);
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // backoff
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+      const data = await res.json();
+      const textBlock = (data.content || []).find(b => b.type === "text");
+      const text = textBlock ? textBlock.text : "";
+      if (!text) throw new Error("empty response");
+      return text;
+    } catch (e) {
+      clearTimeout(timer);
+      lastError = e;
+      // Retry on abort/network errors
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+    }
+  }
+  throw lastError || new Error("فشل الاتصال بعد عدة محاولات");
+}
+function extractJSON(text) {
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/```json/g, "").replace(/```/g, "").trim();
+  const start = cleaned.indexOf("{");
+  const startArr = cleaned.indexOf("[");
+  let s = start;
+  if (startArr !== -1 && (start === -1 || startArr < start)) s = startArr;
+  if (s > 0) cleaned = cleaned.slice(s);
+
+  // First attempt: parse as-is
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Trim any trailing text after the last closing brace/bracket
+    const lastBrace = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+    if (lastBrace > 0) {
+      const trimmed = cleaned.slice(0, lastBrace + 1);
+      try {
+        return JSON.parse(trimmed);
+      } catch (e2) {
+        // continue to recovery
+      }
     }
 
-    document.getElementById('loadingText').textContent = 'جاري التحليل بالذكاء الاصطناعي...';
-    const summary = await callClaude(buildAnalysisMessages(), systemPrompt());
-
-    renderDashboard(summary);
-  } catch (err) {
-    alert('حدث خطأ: ' + err.message);
-    showView('v-upload');
-    startBtn.disabled = false;
+    // Recovery for truncated output: try to salvage complete units from a cut-off array.
+    // Find "units": [ ... and keep only fully-closed objects inside it.
+    const unitsMatch = cleaned.match(/"units"\s*:\s*\[/);
+    if (unitsMatch) {
+      const arrStart = cleaned.indexOf("[", unitsMatch.index);
+      let depth = 0,
+        inStr = false,
+        esc = false,
+        lastCompleteUnitEnd = -1;
+      for (let i = arrStart; i < cleaned.length; i++) {
+        const ch = cleaned[i];
+        if (esc) {
+          esc = false;
+          continue;
+        }
+        if (ch === "\\") {
+          esc = true;
+          continue;
+        }
+        if (ch === '"') inStr = !inStr;
+        if (inStr) continue;
+        if (ch === "{") depth++;else if (ch === "}") {
+          depth--;
+          if (depth === 0) lastCompleteUnitEnd = i; // a top-level unit object just closed
+        }
+      }
+      if (lastCompleteUnitEnd > 0) {
+        const titleMatch = cleaned.match(/"title"\s*:\s*"([^"]*)"/);
+        const title = titleMatch ? titleMatch[1] : "مادة";
+        const salvaged = `{"title":${JSON.stringify(title)},"units":[` + cleaned.slice(arrStart + 1, lastCompleteUnitEnd + 1) + "]}";
+        return JSON.parse(salvaged); // may still throw — caller handles it
+      }
+    }
+    throw e;
   }
 }
 
-async function readFile(file) {
-  const t = file.type;
-  if (t === 'application/pdf') {
-    studyText = await extractPdf(file);
-    fileName  = file.name;
-  } else if (t.startsWith('image/')) {
-    studyImg = { data: await toBase64(file), type: t };
-    studyText = null;
-    fileName  = file.name;
-  } else {
-    studyText = await file.text();
-    fileName  = file.name;
+// ---------- Icons (inline minimal SVG, no external libs needed) ----------
+const Icon = {
+  upload: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.6",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M12 16V4M12 4l-4 4M12 4l4 4",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })),
+  clock: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.6",
+    ...p
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 7v5l3 2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })),
+  check: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M5 12l5 5L20 7",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })),
+  x: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M6 6l12 12M18 6L6 18",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })),
+  chart: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.6",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4 19V9M10 19V5M16 19v-7M22 19H2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })),
+  back: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M15 18l-6-6 6-6",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })),
+  play: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "currentColor",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M8 5l11 7-11 7V5z"
+  })),
+  pause: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "currentColor",
+    ...p
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "6",
+    y: "5",
+    width: "4",
+    height: "14",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "14",
+    y: "5",
+    width: "4",
+    height: "14",
+    rx: "1"
+  })),
+  book: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.6",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4 5.5A2.5 2.5 0 016.5 3H12v17H6.5A2.5 2.5 0 014 17.5v-12z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M20 5.5A2.5 2.5 0 0017.5 3H12v17h5.5a2.5 2.5 0 002.5-2.5v-12z"
+  })),
+  spark: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "currentColor",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"
+  })),
+  trash: p => /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.6",
+    ...p
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 0l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }))
+};
+
+// ---------- Root App ----------
+function App() {
+  // views: loading | onboarding | welcome | moodcheck | home | upload | plan | focus | distraction | quiz | summary | dashboard
+  const [view, setView] = useState("loading");
+  const [topics, setTopics] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [user, setUser] = useState(null); // { name, joinedAt, seenWelcome }
+  const [activeTopic, setActiveTopic] = useState(null);
+  const [activeUnitIndex, setActiveUnitIndex] = useState(0);
+  const [reminderBanner, setReminderBanner] = useState(null); // string | null
+  const [todayMood, setTodayMood] = useState(null); // "active" | "tired" | "stressed"
+  const [distractions, setDistractions] = useState([]); // [{ date, reason, topicTitle, elapsedMin }]
+  const [focusLog, setFocusLog] = useState([]); // [{ date, minutes, topicTitle }]
+  const [distractionContext, setDistractionContext] = useState(null); // { topicTitle, elapsedMin }
+  const [addingToTopic, setAddingToTopic] = useState(null); // topic object when adding a file to an existing topic
+  const [quizResult, setQuizResult] = useState(null); // { correct, total } from quick quiz, used before discussion
+  const [knowledgeProfile, setKnowledgeProfile] = useState([]); // [{ concept, strength, topicTitle, unitTitle, date }]
+  const [conceptWarning, setConceptWarning] = useState(null); // { concept, fromTopic } shown before starting a unit
+
+  useEffect(() => {
+    (async () => {
+      const t = await loadData(STORAGE_KEYS.topics, []);
+      const s = await loadData(STORAGE_KEYS.sessions, []);
+      const u = await loadData(STORAGE_KEYS.user, null);
+      const d = await loadData(STORAGE_KEYS.distractions, []);
+      const fl = await loadData(STORAGE_KEYS.focusLog, []);
+      const kp = await loadData(STORAGE_KEYS.knowledgeProfile, []);
+      setTopics(t);
+      setSessions(s);
+      setDistractions(d);
+      setFocusLog(fl);
+      setKnowledgeProfile(kp);
+      if (!u) {
+        setView("onboarding");
+      } else {
+        setUser(u);
+        // Check reminder workflow
+        const lastSeen = await loadData(STORAGE_KEYS.lastSession, null);
+        if (lastSeen) {
+          const diff = (Date.now() - new Date(lastSeen).getTime()) / (1000 * 60 * 60);
+          if (diff > 24) setReminderBanner(u.name);
+        }
+        // Check daily mood — if not set today, show mood check
+        const savedMood = await loadData(STORAGE_KEYS.mood, null);
+        const today = new Date().toDateString();
+        if (savedMood && savedMood.date === today) {
+          setTodayMood(savedMood.value);
+          setView("home");
+        } else {
+          setView("moodcheck"); // daily mood check before home
+        }
+      }
+    })();
+  }, []);
+  const persistTopics = useCallback(next => {
+    setTopics(next);
+    saveData(STORAGE_KEYS.topics, next);
+  }, []);
+  const persistSessions = useCallback(next => {
+    setSessions(next);
+    saveData(STORAGE_KEYS.sessions, next);
+  }, []);
+  function handleOnboardingDone(name) {
+    const newUser = {
+      name,
+      joinedAt: new Date().toISOString(),
+      seenWelcome: false
+    };
+    setUser(newUser);
+    saveData(STORAGE_KEYS.user, newUser);
+    setView("welcome"); // trigger welcome workflow screen
   }
+  function handleWelcomeDone() {
+    const updated = {
+      ...user,
+      seenWelcome: true
+    };
+    setUser(updated);
+    saveData(STORAGE_KEYS.user, updated);
+    setView("moodcheck");
+  }
+  function handleMoodSelected(mood) {
+    setTodayMood(mood);
+    saveData(STORAGE_KEYS.mood, {
+      value: mood,
+      date: new Date().toDateString()
+    });
+    setView("home");
+  }
+  function handleDistraction(reason) {
+    const ctx = distractionContext;
+    const entry = {
+      date: new Date().toISOString(),
+      reason,
+      topicTitle: ctx?.topicTitle || "",
+      elapsedMin: ctx?.elapsedMin || 0
+    };
+    const next = [entry, ...distractions];
+    setDistractions(next);
+    saveData(STORAGE_KEYS.distractions, next);
+    setView("focus"); // return to focus
+  }
+  function logFocusBlock(minutes, topicTitle) {
+    const entry = {
+      date: new Date().toISOString(),
+      minutes,
+      topicTitle
+    };
+    const next = [entry, ...focusLog];
+    setFocusLog(next);
+    saveData(STORAGE_KEYS.focusLog, next);
+  }
+
+  // Update the knowledge profile for every concept in a unit, based on how the discussion went.
+  function updateKnowledgeProfile(unit, topicTitle, passed) {
+    const concepts = unit.concepts || [];
+    if (concepts.length === 0) return;
+    const strength = passed ? "ok" : "weak";
+    const now = new Date().toISOString();
+    let next = [...knowledgeProfile];
+    concepts.forEach(concept => {
+      const idx = next.findIndex(k => k.concept === concept);
+      const entry = {
+        concept,
+        strength,
+        topicTitle,
+        unitTitle: unit.title,
+        date: now
+      };
+      if (idx >= 0) {
+        next[idx] = entry; // most recent assessment of this concept wins
+      } else {
+        next.push(entry);
+      }
+    });
+    setKnowledgeProfile(next);
+    saveData(STORAGE_KEYS.knowledgeProfile, next);
+  }
+
+  // Before starting a unit, check if any of its concepts were previously marked weak in a DIFFERENT topic.
+  function checkConceptWarning(unit, currentTopicTitle) {
+    const concepts = unit.concepts || [];
+    for (const concept of concepts) {
+      const match = knowledgeProfile.find(k => k.concept === concept && k.strength === "weak" && k.topicTitle !== currentTopicTitle);
+      if (match) {
+        return {
+          concept,
+          fromTopic: match.topicTitle,
+          fromUnit: match.unitTitle
+        };
+      }
+    }
+    return null;
+  }
+
+  // Finalize a study session — used both when discussion completes and when user exits early.
+  // countDiscussion=false means the discussion didn't really happen (user exited), so score on quiz only.
+  function finishStudySession(discussionPassed, countDiscussion) {
+    const now = new Date().toISOString();
+    const quizScore = quizResult ? quizResult.correct / quizResult.total : 1;
+    const finalScore = countDiscussion ? (quizScore + (discussionPassed ? 1 : 0.5)) / 2 : quizScore;
+    const unit = activeTopic.units[activeUnitIndex];
+    const newSession = {
+      id: "s_" + Date.now(),
+      topicId: activeTopic.id,
+      topicTitle: activeTopic.title,
+      unitIndex: activeUnitIndex,
+      unitTitle: unit.title,
+      date: now,
+      correct: quizResult ? quizResult.correct : 1,
+      total: quizResult ? quizResult.total : 1,
+      durationMin: unit.minutes
+    };
+    const nextSessions = [newSession, ...sessions];
+    persistSessions(nextSessions);
+    saveData(STORAGE_KEYS.lastSession, now);
+    const nextTopics = topics.map(t => {
+      if (t.id !== activeTopic.id) return t;
+      const units = t.units.map((u, i) => i === activeUnitIndex ? {
+        ...u,
+        completed: true,
+        lastScore: finalScore
+      } : u);
+      return {
+        ...t,
+        units
+      };
+    });
+    persistTopics(nextTopics);
+    setActiveTopic(nextTopics.find(t => t.id === activeTopic.id));
+    if (countDiscussion) {
+      updateKnowledgeProfile(unit, activeTopic.title, discussionPassed);
+    }
+    setReminderBanner(null);
+    setQuizResult(null);
+    setView("summary");
+  }
+  function openTopic(topic) {
+    setActiveTopic(topic);
+    setActiveUnitIndex(0);
+    setView("plan");
+  }
+  function deleteTopic(id) {
+    persistTopics(topics.filter(t => t.id !== id));
+  }
+  if (view === "loading") {
+    return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "60vh"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "hemma-pulse",
+      style: {
+        width: 10,
+        height: 10,
+        borderRadius: "50%",
+        background: "var(--accent)",
+        margin: "0 auto 14px"
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        color: "var(--ink-soft)"
+      }
+    }, "...جاري التحميل"))));
+  }
+  return /*#__PURE__*/React.createElement(Shell, null, view === "onboarding" && /*#__PURE__*/React.createElement(OnboardingScreen, {
+    onDone: handleOnboardingDone
+  }), view === "welcome" && user && /*#__PURE__*/React.createElement(WelcomeScreen, {
+    user: user,
+    onDone: handleWelcomeDone
+  }), view === "moodcheck" && /*#__PURE__*/React.createElement(MoodCheckScreen, {
+    user: user,
+    currentMood: todayMood,
+    onSelect: handleMoodSelected,
+    onBack: todayMood ? () => setView("home") : null
+  }), view === "home" && /*#__PURE__*/React.createElement(Home, {
+    user: user,
+    mood: todayMood,
+    topics: topics,
+    sessions: sessions,
+    reminderBanner: reminderBanner,
+    onDismissReminder: () => setReminderBanner(null),
+    onOpenUpload: () => setView("upload"),
+    onOpenTopic: openTopic,
+    onDeleteTopic: deleteTopic,
+    onOpenDashboard: () => setView("dashboard"),
+    onChangeMood: () => setView("moodcheck")
+  }), view === "upload" && /*#__PURE__*/React.createElement(UploadFlow, {
+    existingTopic: addingToTopic,
+    mood: todayMood,
+    knowledgeProfile: knowledgeProfile,
+    onCancel: () => setView(addingToTopic ? "plan" : "home"),
+    onCreated: topic => {
+      const next = [topic, ...topics];
+      persistTopics(next);
+      setActiveTopic(topic);
+      setActiveUnitIndex(0);
+      setAddingToTopic(null);
+      setView("plan");
+    },
+    onUnitsAdded: (topicId, newUnits) => {
+      const nextTopics = topics.map(t => t.id === topicId ? {
+        ...t,
+        units: [...t.units, ...newUnits]
+      } : t);
+      persistTopics(nextTopics);
+      const updated = nextTopics.find(t => t.id === topicId);
+      setActiveTopic(updated);
+      setAddingToTopic(null);
+      setView("plan");
+    },
+    setError: () => {}
+  }), view === "plan" && activeTopic && /*#__PURE__*/React.createElement(PlanView, {
+    topic: activeTopic,
+    sessions: sessions,
+    onBack: () => setView("home"),
+    onStartUnit: idx => {
+      setActiveUnitIndex(idx);
+      const warning = checkConceptWarning(activeTopic.units[idx], activeTopic.title);
+      if (warning) {
+        setConceptWarning(warning);
+        setView("conceptWarning");
+      } else {
+        setView("focus");
+      }
+    },
+    onAddFile: () => {
+      setAddingToTopic(activeTopic);
+      setView("upload");
+    }
+  }), view === "conceptWarning" && conceptWarning && /*#__PURE__*/React.createElement(ConceptWarningScreen, {
+    warning: conceptWarning,
+    onContinue: () => {
+      setConceptWarning(null);
+      setView("focus");
+    }
+  }), view === "focus" && activeTopic && /*#__PURE__*/React.createElement(FocusSession, {
+    topic: activeTopic,
+    unitIndex: activeUnitIndex,
+    mood: todayMood,
+    onAbort: () => setView("plan"),
+    onFinishStudy: elapsedMin => {
+      logFocusBlock(elapsedMin, activeTopic.title);
+      setView("quiz");
+    },
+    onDistracted: elapsedMin => {
+      setDistractionContext({
+        topicTitle: activeTopic.title,
+        elapsedMin
+      });
+      setView("distraction");
+    }
+  }), view === "distraction" && /*#__PURE__*/React.createElement(DistractionScreen, {
+    context: distractionContext,
+    onBack: handleDistraction
+  }), view === "quiz" && activeTopic && /*#__PURE__*/React.createElement(QuizView, {
+    topic: activeTopic,
+    unitIndex: activeUnitIndex,
+    onDone: result => {
+      setQuizResult(result);
+      setView("discuss");
+    }
+  }), view === "discuss" && activeTopic && /*#__PURE__*/React.createElement(DiscussionView, {
+    topic: activeTopic,
+    unitIndex: activeUnitIndex,
+    onDone: discussionPassed => finishStudySession(discussionPassed, true),
+    onExit: () => finishStudySession(false, false)
+  }), view === "summary" && activeTopic && /*#__PURE__*/React.createElement(SessionSummary, {
+    topic: activeTopic,
+    unitIndex: activeUnitIndex,
+    sessions: sessions,
+    onBackToPlan: () => setView("plan"),
+    onHome: () => setView("home")
+  }), view === "dashboard" && /*#__PURE__*/React.createElement(Dashboard, {
+    topics: topics,
+    sessions: sessions,
+    distractions: distractions,
+    focusLog: focusLog,
+    onBack: () => setView("home")
+  }));
 }
 
-async function extractPdf(file) {
-  const ab  = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-  let out   = '';
+// ============================================================
+// CONCEPT WARNING — cross-subject weak-link detection
+// ============================================================
+function ConceptWarningScreen({
+  warning,
+  onContinue
+}) {
+  return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      minHeight: "75vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 30
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 42,
+      marginBottom: 14
+    }
+  }, "🔗"), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 21,
+      margin: "0 0 12px"
+    }
+  }, "هذي الوحدة مرتبطة بنقطة ضعف سابقة"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14.5,
+      lineHeight: 1.9,
+      margin: 0
+    }
+  }, "لاحظنا إن مفهوم «", /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: "var(--warm)"
+    }
+  }, warning.concept), "» كان ضعيف عندك وقت ذاكرت «", warning.fromUnit, "» بمادة «", warning.fromTopic, "».", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("br", null), "هذي الوحدة تعتمد على نفس المفهوم — خذ وقتك فيها أكثر، وممكن ترجع تراجع المادة القديمة لو احتجت.")), /*#__PURE__*/React.createElement("button", {
+    onClick: onContinue,
+    style: {
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 14.5,
+      fontWeight: 600
+    }
+  }, "فهمت، نبدأ الجلسة")));
+}
+
+// ============================================================
+// MOOD CHECK — daily check-in before home
+// ============================================================
+function MoodCheckScreen({
+  user,
+  currentMood,
+  onSelect,
+  onBack
+}) {
+  const moods = [{
+    key: "active",
+    emoji: "⚡",
+    label: "نشيط",
+    sub: "جاهز أركز وأستوعب",
+    color: "var(--accent)",
+    soft: "var(--accent-soft)"
+  }, {
+    key: "tired",
+    emoji: "😴",
+    label: "متعب",
+    sub: "أحتاج جلسات خفيفة",
+    color: "#8B7355",
+    soft: "#F5F0E8"
+  }, {
+    key: "stressed",
+    emoji: "🌊",
+    label: "مضغوط",
+    sub: "أبغى أهم النقاط بسرعة",
+    color: "var(--warm)",
+    soft: "var(--warm-soft)"
+  }];
+  return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      minHeight: "80vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center"
+    }
+  }, onBack && /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    "aria-label": "رجوع",
+    style: {
+      background: "none",
+      border: "none",
+      color: "var(--ink-soft)",
+      display: "flex",
+      alignItems: "center",
+      gap: 4,
+      fontSize: 13.5,
+      marginBottom: 18,
+      padding: 4,
+      alignSelf: "flex-start"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.back, {
+    style: {
+      width: 16,
+      height: 16,
+      transform: "scaleX(-1)"
+    }
+  }), "رجوع"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 32
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 9,
+      background: "var(--accent)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.spark, {
+    style: {
+      width: 16,
+      height: 16
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontWeight: 700,
+      fontSize: 22
+    }
+  }, "همّة")), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 22,
+      margin: "0 0 8px",
+      fontWeight: 600
+    }
+  }, currentMood ? "غيّر مزاجك" : user ? `كيف حالك اليوم يا ${user.name}؟` : "كيف حالك اليوم؟"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14,
+      margin: 0,
+      lineHeight: 1.8
+    }
+  }, currentMood ? "اختر وضعك الحالي وراح نحدّث خطة جلساتك على طول." : "سؤال واحد — وراح نكيّف خطة مذاكرتك على أساسه.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, moods.map(m => /*#__PURE__*/React.createElement("button", {
+    key: m.key,
+    onClick: () => onSelect(m.key),
+    style: {
+      background: m.soft,
+      border: "1.5px solid " + (currentMood === m.key ? m.color : "transparent"),
+      borderRadius: 14,
+      padding: "18px 20px",
+      display: "flex",
+      alignItems: "center",
+      gap: 14,
+      textAlign: "right",
+      transition: "border-color 0.15s"
+    },
+    onMouseEnter: e => e.currentTarget.style.borderColor = m.color,
+    onMouseLeave: e => e.currentTarget.style.borderColor = currentMood === m.key ? m.color : "transparent"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 28,
+      flexShrink: 0
+    }
+  }, m.emoji), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 16,
+      color: m.color,
+      marginBottom: 3
+    }
+  }, m.label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "var(--ink-soft)"
+    }
+  }, m.sub)))))));
+}
+
+// ============================================================
+// DISTRACTION SCREEN — shown when user leaves during focus
+// ============================================================
+function DistractionScreen({
+  context,
+  onBack
+}) {
+  const reasons = [{
+    key: "phone",
+    label: "📱 الجوال شدّ انتباهي"
+  }, {
+    key: "bored",
+    label: "😶 ملّيت من الموضوع"
+  }, {
+    key: "tired",
+    label: "😴 تعبت فجأة"
+  }, {
+    key: "unclear",
+    label: "🤔 ما فهمت شي وانسحبت"
+  }, {
+    key: "other",
+    label: "🌀 شي ثاني"
+  }];
+  return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      minHeight: "75vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 32
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 42,
+      marginBottom: 14
+    }
+  }, "👋"), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 21,
+      margin: "0 0 10px"
+    }
+  }, "رحت وجيت — لا بأس"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14,
+      lineHeight: 1.8,
+      margin: 0
+    }
+  }, "وش اللي سحب انتباهك؟ إجابتك تساعدنا نحسّن خطتك.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, reasons.map(r => /*#__PURE__*/React.createElement("button", {
+    key: r.key,
+    onClick: () => onBack(r.key),
+    style: {
+      background: "var(--card)",
+      border: "1px solid var(--line)",
+      borderRadius: 12,
+      padding: "15px 18px",
+      textAlign: "right",
+      fontSize: 14.5,
+      color: "var(--ink)"
+    }
+  }, r.label))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onBack("dismissed"),
+    style: {
+      marginTop: 16,
+      background: "none",
+      border: "none",
+      color: "var(--ink-soft)",
+      fontSize: 13,
+      padding: 8
+    }
+  }, "تخطى — ارجع للجلسة مباشرة")));
+}
+
+// ============================================================
+// ONBOARDING — first-time user name entry
+// ============================================================
+function OnboardingScreen({
+  onDone
+}) {
+  const [name, setName] = useState("");
+  return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      minHeight: "85vh"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 40
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 40,
+      height: 40,
+      borderRadius: 11,
+      background: "var(--accent)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.spark, {
+    style: {
+      width: 19,
+      height: 19
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontWeight: 700,
+      fontSize: 30
+    }
+  }, "همّة")), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 24,
+      margin: "0 0 10px",
+      fontWeight: 600
+    }
+  }, "أهلاً بك في همّة ✨"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14.5,
+      lineHeight: 1.9,
+      margin: "0 0 34px"
+    }
+  }, "مرافقتك للمذاكرة الذكية — نقسم موادك لجلسات مركزة،", /*#__PURE__*/React.createElement("br", null), "ونتأكد إنك فهمت قبل ما تنتقل للموضوع الجاي."), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13.5,
+      color: "var(--ink-soft)",
+      marginBottom: 8,
+      display: "block"
+    }
+  }, "وش اسمك؟"), /*#__PURE__*/React.createElement("input", {
+    value: name,
+    onChange: e => setName(e.target.value),
+    onKeyDown: e => e.key === "Enter" && name.trim() && onDone(name.trim()),
+    placeholder: "اكتب اسمك هنا...",
+    autoFocus: true,
+    style: {
+      width: "100%",
+      padding: "14px 16px",
+      borderRadius: 12,
+      border: "1.5px solid var(--line)",
+      fontSize: 15,
+      fontFamily: "inherit",
+      background: "var(--card)",
+      color: "var(--ink)",
+      marginBottom: 16
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => name.trim() && onDone(name.trim()),
+    disabled: !name.trim(),
+    style: {
+      width: "100%",
+      background: name.trim() ? "var(--accent)" : "var(--line)",
+      color: name.trim() ? "#fff" : "var(--ink-soft)",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 15,
+      fontWeight: 600
+    }
+  }, "ابدأ رحلتك")));
+}
+
+// ============================================================
+// WELCOME WORKFLOW — shown once after first registration
+// ============================================================
+function WelcomeScreen({
+  user,
+  onDone
+}) {
+  const steps = [{
+    icon: "📂",
+    title: "أضف مادتك",
+    desc: "الصق نص المحاضرة أو الملخص وراح نقسمه لك تلقائياً."
+  }, {
+    icon: "⏱",
+    title: "ذاكر بتركيز",
+    desc: "كل جلسة لها مؤقت وهدف واحد واضح — بدون تشتيت."
+  }, {
+    icon: "✅",
+    title: "تأكد من فهمك",
+    desc: "بعد كل جلسة، أسئلة سريعة تتأكد فيها من فهمك قبل ما تنتقل."
+  }];
+  const [step, setStep] = useState(0);
+  const isLast = step === steps.length;
+  return /*#__PURE__*/React.createElement(Shell, null, /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      minHeight: "80vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center"
+    }
+  }, !isLast ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 40
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 52,
+      marginBottom: 20
+    }
+  }, steps[step].icon), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 24,
+      margin: "0 0 12px"
+    }
+  }, steps[step].title), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 15,
+      lineHeight: 1.9,
+      margin: 0
+    }
+  }, steps[step].desc)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      gap: 8,
+      marginBottom: 32
+    }
+  }, steps.map((_, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      width: i === step ? 20 : 8,
+      height: 8,
+      borderRadius: 4,
+      background: i === step ? "var(--accent)" : "var(--line)",
+      transition: "width 0.3s ease"
+    }
+  }))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setStep(s => s + 1),
+    style: {
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 15,
+      fontWeight: 600
+    }
+  }, step < steps.length - 1 ? "التالي" : "ابدأ الآن")) :
+  /*#__PURE__*/
+  // Final welcome message
+  React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 52,
+      marginBottom: 20
+    }
+  }, "🌟"), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 26,
+      margin: "0 0 12px"
+    }
+  }, "أهلاً ", user.name, "!"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 15,
+      lineHeight: 1.9,
+      margin: "0 0 36px"
+    }
+  }, "همّة جاهز يساعدك تذاكر بذكاء وتركيز.", /*#__PURE__*/React.createElement("br", null), "ابدأ بإضافة أول مادة ونشتغل مع بعض."), /*#__PURE__*/React.createElement("button", {
+    onClick: onDone,
+    style: {
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 15,
+      fontWeight: 600,
+      boxShadow: "0 4px 14px -4px rgba(107,127,115,0.45)"
+    }
+  }, "أضف أول مادة"))));
+}
+
+// ---------- Shell / Theme ----------
+function Shell({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      "--bg": "#FAF8F4",
+      "--card": "#FFFFFF",
+      "--line": "#E8E3D8",
+      "--ink": "#2D2A26",
+      "--ink-soft": "#73695C",
+      "--accent": "#6B7F73",
+      "--accent-soft": "#E3E9E2",
+      "--warm": "#C4604A",
+      "--warm-soft": "#F4E4DF",
+      "--font-display": "'Markazi Text', 'Amiri', serif",
+      "--font-body": "'IBM Plex Sans Arabic', 'Tahoma', sans-serif",
+      minHeight: "100vh",
+      background: "var(--bg)",
+      color: "var(--ink)",
+      fontFamily: "var(--font-body)",
+      direction: "rtl",
+      padding: "0"
+    }
+  }, /*#__PURE__*/React.createElement("style", null, `
+        @import url('https://fonts.googleapis.com/css2?family=Markazi+Text:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+        * { box-sizing: border-box; }
+        .hemma-pulse { animation: hemmaPulse 1.4s ease-in-out infinite; }
+        @keyframes hemmaPulse { 0%,100%{opacity:0.35; transform:scale(0.85);} 50%{opacity:1; transform:scale(1.15);} }
+        .hemma-fade-in { animation: hemmaFadeIn 0.45s ease both; }
+        @keyframes hemmaFadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+        button { font-family: inherit; cursor: pointer; }
+        button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        ::selection { background: var(--accent-soft); }
+        @media (prefers-reduced-motion: reduce) {
+          .hemma-pulse, .hemma-fade-in { animation: none !important; }
+        }
+      `), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 720,
+      margin: "0 auto",
+      padding: "28px 20px 60px"
+    }
+  }, children));
+}
+
+// ---------- Top bar ----------
+function TopBar({
+  title,
+  onBack,
+  right
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 26
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, onBack && /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    "aria-label": "رجوع",
+    style: {
+      background: "none",
+      border: "none",
+      color: "var(--ink-soft)",
+      padding: 6,
+      borderRadius: 8,
+      display: "flex"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.back, {
+    style: {
+      width: 20,
+      height: 20,
+      transform: "scaleX(-1)"
+    }
+  })), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontWeight: 600,
+      fontSize: 22,
+      margin: 0
+    }
+  }, title)), right);
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function Home({
+  user,
+  mood,
+  topics,
+  sessions,
+  reminderBanner,
+  onDismissReminder,
+  onOpenUpload,
+  onOpenTopic,
+  onDeleteTopic,
+  onOpenDashboard,
+  onChangeMood
+}) {
+  const totalSessions = sessions.length;
+  const streak = computeStreak(sessions);
+  const moodMeta = {
+    active: {
+      emoji: "⚡",
+      text: "وضعك: نشيط — راح تذاكر بعمق اليوم",
+      color: "var(--accent)",
+      bg: "var(--accent-soft)"
+    },
+    tired: {
+      emoji: "😴",
+      text: "وضعك: متعب — جلسات خفيفة اليوم",
+      color: "#8B7355",
+      bg: "#F5F0E8"
+    },
+    stressed: {
+      emoji: "🌊",
+      text: "وضعك: مضغوط — نركز على الأهم بس",
+      color: "var(--warm)",
+      bg: "var(--warm-soft)"
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 9,
+      background: "var(--accent)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.spark, {
+    style: {
+      width: 16,
+      height: 16
+    }
+  })), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontWeight: 700,
+      fontSize: 28,
+      margin: 0
+    }
+  }, "همّة")), /*#__PURE__*/React.createElement("button", {
+    onClick: onOpenDashboard,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      background: "none",
+      border: "1px solid var(--line)",
+      borderRadius: 10,
+      padding: "8px 12px",
+      color: "var(--ink-soft)",
+      fontSize: 13
+    }
+  }, /*#__PURE__*/React.createElement(Icon.chart, {
+    style: {
+      width: 15,
+      height: 15
+    }
+  }), "تقدمي")), mood && moodMeta[mood] && /*#__PURE__*/React.createElement("button", {
+    onClick: onChangeMood,
+    style: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      background: moodMeta[mood].bg,
+      border: "none",
+      borderRadius: 20,
+      padding: "6px 12px 6px 8px",
+      marginBottom: 16,
+      fontSize: 13,
+      color: moodMeta[mood].color
+    }
+  }, /*#__PURE__*/React.createElement("span", null, moodMeta[mood].emoji), /*#__PURE__*/React.createElement("span", null, moodMeta[mood].text), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      opacity: 0.75,
+      marginRight: 2
+    }
+  }, "· تغيير")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14.5,
+      margin: "0 0 20px",
+      lineHeight: 1.7
+    }
+  }, user ? `أهلاً ${user.name}،` : "أهلاً،", " ارفع مصدرك وراح نقسمه لجلسات مركزة."), reminderBanner && /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      background: "var(--warm-soft)",
+      border: "1px solid var(--warm)",
+      borderRadius: 12,
+      padding: "13px 15px",
+      marginBottom: 20,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13.5,
+      color: "var(--ink)"
+    }
+  }, "👋 وين كنت ", reminderBanner, "؟ موادك تنتظرك — ابدأ جلسة الآن!"), /*#__PURE__*/React.createElement("button", {
+    onClick: onDismissReminder,
+    style: {
+      background: "none",
+      border: "none",
+      color: "var(--ink-soft)",
+      padding: 4,
+      display: "flex"
+    },
+    "aria-label": "إغلاق"
+  }, /*#__PURE__*/React.createElement(Icon.x, {
+    style: {
+      width: 15,
+      height: 15
+    }
+  }))), totalSessions > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement(StatPill, {
+    label: "جلسة مكتملة",
+    value: totalSessions
+  }), /*#__PURE__*/React.createElement(StatPill, {
+    label: "يوم متتابع",
+    value: streak,
+    accent: streak > 0
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onOpenUpload,
+    style: {
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 14,
+      padding: "18px 20px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      fontSize: 15.5,
+      fontWeight: 600,
+      marginBottom: 30,
+      boxShadow: "0 4px 14px -4px rgba(107,127,115,0.45)"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.upload, {
+    style: {
+      width: 18,
+      height: 18
+    }
+  }), "أضف مادة جديدة للمذاكرة"), topics.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, null) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 14,
+      color: "var(--ink-soft)",
+      fontWeight: 600,
+      margin: "0 0 12px"
+    }
+  }, "موادك"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, topics.map(t => /*#__PURE__*/React.createElement(TopicCard, {
+    key: t.id,
+    topic: t,
+    onOpen: () => onOpenTopic(t),
+    onDelete: () => onDeleteTopic(t.id)
+  })))));
+}
+function StatPill({
+  label,
+  value,
+  accent
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      background: accent ? "var(--warm-soft)" : "var(--card)",
+      border: "1px solid " + (accent ? "transparent" : "var(--line)"),
+      borderRadius: 12,
+      padding: "12px 14px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 22,
+      fontWeight: 700,
+      color: accent ? "var(--warm)" : "var(--ink)"
+    }
+  }, value), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "var(--ink-soft)"
+    }
+  }, label));
+}
+function EmptyState() {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: "1.5px dashed var(--line)",
+      borderRadius: 16,
+      padding: "36px 20px",
+      textAlign: "center",
+      color: "var(--ink-soft)"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.book, {
+    style: {
+      width: 30,
+      height: 30,
+      margin: "0 auto 12px",
+      color: "var(--accent)"
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      margin: 0,
+      fontSize: 14,
+      lineHeight: 1.8
+    }
+  }, "لسا ما أضفت أي مادة. ابدأ بإضافة محاضرة أو ملخص،", /*#__PURE__*/React.createElement("br", null), "وراح نحولها لخطة مذاكرة واضحة."));
+}
+function TopicCard({
+  topic,
+  onOpen,
+  onDelete
+}) {
+  const done = topic.units.filter(u => u.completed).length;
+  const pct = Math.round(done / topic.units.length * 100);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "var(--card)",
+      border: "1px solid var(--line)",
+      borderRadius: 14,
+      padding: "16px 16px",
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onOpen,
+    style: {
+      flex: 1,
+      textAlign: "right",
+      background: "none",
+      border: "none",
+      padding: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      fontSize: 15.5,
+      marginBottom: 6
+    }
+  }, topic.title), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      height: 6,
+      borderRadius: 4,
+      background: "var(--line)",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: pct + "%",
+      height: "100%",
+      background: "var(--accent)",
+      borderRadius: 4
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "var(--ink-soft)",
+      whiteSpace: "nowrap"
+    }
+  }, done, "/", topic.units.length))), /*#__PURE__*/React.createElement("button", {
+    onClick: onDelete,
+    "aria-label": "حذف",
+    style: {
+      background: "none",
+      border: "none",
+      color: "var(--ink-soft)",
+      padding: 6
+    }
+  }, /*#__PURE__*/React.createElement(Icon.trash, {
+    style: {
+      width: 17,
+      height: 17
+    }
+  })));
+}
+function computeStreak(sessions) {
+  if (sessions.length === 0) return 0;
+  const days = new Set(sessions.map(s => new Date(s.date).toDateString()));
+  let streak = 0;
+  let cursor = new Date();
+  while (true) {
+    if (days.has(cursor.toDateString())) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+// ============================================================
+// UPLOAD FLOW
+// ============================================================
+// ---------- PDF text extraction (client-side via pdf.js) ----------
+let pdfjsLoaded = false;
+async function ensurePdfJs() {
+  if (pdfjsLoaded && window.pdfjsLib) return;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  pdfjsLoaded = true;
+}
+async function extractTextFromPdf(file, onProgress) {
+  await ensurePdfJs();
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({
+    data: arrayBuffer
+  }).promise;
+  let fullText = "";
   for (let i = 1; i <= pdf.numPages; i++) {
-    const page    = await pdf.getPage(i);
+    const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    out += content.items.map(x => x.str).join(' ') + '\n\n';
+    const pageText = content.items.map(item => item.str).join(" ");
+    fullText += pageText + "\n\n";
+    if (onProgress) onProgress(i, pdf.numPages);
   }
-  return out.trim();
+  return fullText.trim();
 }
 
-function toBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
+// ---------- Generic CDN script loader ----------
+const loadedScripts = {};
+async function loadScript(src) {
+  if (loadedScripts[src]) return;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("script load failed: " + src));
+    document.head.appendChild(script);
   });
+  loadedScripts[src] = true;
 }
 
-// ── System prompt ──────────────────────────────────────────
-function systemPrompt(extra) {
-  const base = `أنت مساعد دراسي ذكي اسمك "همّة". مهمتك مساعدة الطلاب العرب على الفهم العميق للمواد الدراسية.
+// ---------- Word (.docx) extraction via mammoth.js ----------
+async function extractTextFromDocx(file) {
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await window.mammoth.extractRawText({
+    arrayBuffer
+  });
+  return (result && result.value ? result.value : "").trim();
+}
+
+// ---------- PowerPoint (.pptx) extraction via JSZip + slide XML parsing ----------
+async function extractTextFromPptx(file, onProgress) {
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+  const arrayBuffer = await file.arrayBuffer();
+  const zip = await window.JSZip.loadAsync(arrayBuffer);
+
+  // Slides live in ppt/slides/slideN.xml — collect and sort them numerically
+  const slidePaths = Object.keys(zip.files).filter(p => /^ppt\/slides\/slide\d+\.xml$/.test(p)).sort((a, b) => {
+    const na = parseInt(a.match(/slide(\d+)\.xml/)[1], 10);
+    const nb = parseInt(b.match(/slide(\d+)\.xml/)[1], 10);
+    return na - nb;
+  });
+  let fullText = "";
+  for (let i = 0; i < slidePaths.length; i++) {
+    const xml = await zip.files[slidePaths[i]].async("string");
+    // Text in pptx lives inside <a:t>...</a:t> runs
+    const matches = xml.match(/<a:t>([\s\S]*?)<\/a:t>/g) || [];
+    const slideText = matches.map(m => m.replace(/<a:t>/, "").replace(/<\/a:t>/, "")).join(" ")
+    // decode the few common XML entities
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+    if (slideText.trim()) {
+      fullText += `— شريحة ${i + 1} —\n${slideText.trim()}\n\n`;
+    }
+    if (onProgress) onProgress(i + 1, slidePaths.length);
+  }
+  return fullText.trim();
+}
+function UploadFlow({
+  existingTopic,
+  mood,
+  knowledgeProfile,
+  onCancel,
+  onCreated,
+  onUnitsAdded,
+  setError
+}) {
+  const [text, setText] = useState("");
+  const [title, setTitle] = useState("");
+  const [mode, setMode] = useState("file"); // "file" | "paste"
+  const [fileName, setFileName] = useState("");
+  const [stage, setStage] = useState("input"); // input | extracting | analyzing | failed
+  const [errMsg, setErrMsg] = useState("");
+  const [pdfProgress, setPdfProgress] = useState(null); // { current, total }
+  const fileInputRef = useRef(null);
+  async function handleFileSelected(file) {
+    if (!file) return;
+    setErrMsg("");
+    setFileName(file.name);
+    const name = file.name.toLowerCase();
+    let kind = null;
+    if (name.endsWith(".pdf")) kind = "pdf";else if (name.endsWith(".docx")) kind = "docx";else if (name.endsWith(".pptx")) kind = "pptx";else if (name.endsWith(".doc") || name.endsWith(".ppt")) {
+      setErrMsg("صيغ .doc و .ppt القديمة غير مدعومة. احفظ الملف بصيغة .docx أو .pptx الحديثة، أو استخدم خيار اللصق.");
+      return;
+    } else {
+      setErrMsg("الصيغ المدعومة: PDF و Word (.docx) و PowerPoint (.pptx). لو ملفك صيغة ثانية، استخدم خيار اللصق.");
+      return;
+    }
+    setStage("extracting");
+    setPdfProgress(null);
+    try {
+      let extracted = "";
+      if (kind === "pdf") {
+        extracted = await extractTextFromPdf(file, (cur, total) => setPdfProgress({
+          current: cur,
+          total
+        }));
+      } else if (kind === "docx") {
+        extracted = await extractTextFromDocx(file);
+      } else if (kind === "pptx") {
+        extracted = await extractTextFromPptx(file, (cur, total) => setPdfProgress({
+          current: cur,
+          total
+        }));
+      }
+      if (!extracted || extracted.length < 30) {
+        throw new Error("empty");
+      }
+      setText(extracted);
+      if (!title.trim()) {
+        setTitle(file.name.replace(/\.(pdf|docx|pptx)$/i, ""));
+      }
+      setStage("input");
+      setPdfProgress(null);
+    } catch (e) {
+      console.error(e);
+      let msg = "ما تمكنّا نقرأ نص من هذا الملف. جرب خيار اللصق بدل ذلك.";
+      if (kind === "pdf") {
+        msg = "ما تمكنّا نقرأ نص من هذا الملف. ممكن يكون PDF صور ممسوحة (سكان) بدون نص قابل للتحديد — جرب خيار اللصق بدل ذلك.";
+      } else if (kind === "pptx") {
+        msg = "ما لقينا نص قابل للقراءة في هذا العرض. لو السلايدات صور بدون نص، استخدم خيار اللصق.";
+      } else if (kind === "docx") {
+        msg = "ما تمكنّا نقرأ نص من ملف الوورد. تأكد إنه ملف .docx سليم، أو استخدم خيار اللصق.";
+      }
+      setErrMsg(msg);
+      setStage("input");
+      setPdfProgress(null);
+    }
+  }
+  async function handleAnalyze() {
+    if (!text.trim()) return;
+    setStage("analyzing");
+    setErrMsg("");
+    try {
+      // Build adaptive context from mood and known weak concepts
+      const weakConcepts = (knowledgeProfile || []).filter(k => k.strength === "weak").map(k => k.concept);
+      const uniqueWeak = [...new Set(weakConcepts)];
+      let adaptiveNote = "";
+      if (mood === "tired") {
+        adaptiveNote += "\nالطالب متعب اليوم: اجعل الملخصات أقصر وأبسط، وقسّم المعلومة لخطوات صغيرة جداً، وقلّل المصطلحات المعقدة.";
+      } else if (mood === "stressed") {
+        adaptiveNote += "\nالطالب مضغوط اليوم: ركّز على أهم النقاط الجوهرية فقط بكل وحدة، واجعل الملخصات مباشرة وسريعة الاستيعاب.";
+      } else if (mood === "active") {
+        adaptiveNote += "\nالطالب نشيط اليوم: تقدر تعطي ملخصات أعمق وأكثر تفصيلاً وتربط الأفكار ببعضها.";
+      }
+      if (uniqueWeak.length > 0) {
+        adaptiveNote += `\nملاحظة مهمة: الطالب أظهر ضعفاً سابقاً في هذي المفاهيم: ${uniqueWeak.join("، ")}. إذا ظهر أي منها (أو ما يعتمد عليها) في هذا المحتوى، اشرحه بتفصيل إضافي وخطوات أبسط، ونبّه عليه في الملخص.`;
+      }
+      const system = "أنت مساعد تعليمي متخصص بتحويل محتوى دراسي إلى خطة مذاكرة مقسمة لوحدات صغيرة مركزة. تتكيف مع حالة الطالب ونقاط ضعفه. قواعد إخراج صارمة: رد بـ JSON صالح فقط، بدون أي نص أو تعليق قبله أو بعده، وبدون علامات ```. تأكد أن JSON مكتمل ومُغلق بشكل صحيح. اجعل النصوص داخل الحقول مختصرة قدر الإمكان حتى لا ينقطع الإخراج. لا تستخدم أسطر جديدة داخل قيم النصوص.";
+      const prompt = `حلل المحتوى الدراسي التالي وقسمه إلى وحدات تعلم صغيرة (3 إلى 5 وحدات حسب حجم المحتوى)، كل وحدة تستغرق بين 15 و30 دقيقة مذاكرة فعلية.
+${adaptiveNote}
+
+لكل وحدة، جهز:
+1. عنوان واضح ومحدد (مو عام)
+2. شرح منظّم للوحدة بالعربي على شكل:
+   - "intro": جملة أو جملتين تمهيدية تعرّف الموضوع باختصار
+   - "points": قائمة من 3 إلى 6 نقاط أساسية، كل نقطة جملة واضحة ومركزة تشرح فكرة واحدة (تقدر تستخدم مصطلحات تقنية بالإنجليزي بين قوسين لو لزم)
+   - "examples": مثال أو مثالين عمليين يوضحان الفكرة بشكل ملموس (كل مثال جملة أو جملتين)
+3. مقتطف حرفي (sourceExcerpt) من النص الأصلي بالضبط — الجزء اللي يخص هذي الوحدة فقط، بدون تلخيص أو تعديل، عشان نستخدمه لاحقاً كمرجع دقيق لمناقشة الطالب
+4. قائمة مفاهيم (concepts) — 2 إلى 4 مفاهيم أساسية بهذي الوحدة، كل مفهوم كلمة أو عبارة قصيرة عامة قابلة لتكرارها بمواد أخرى (مثلاً "التفاضل"، "الاستقراء الرياضي"، "تطبيع قواعد البيانات") — لا تكون خاصة جداً بهذا المقرر فقط
+5. مدة مقترحة بالدقايق (15، 20، 25، أو 30)
+6. ثلاث أسئلة استرجاع نشط (Active Recall) على هذي الوحدة بالضبط - تكون اختيار من متعدد (4 خيارات)، مع تحديد الإجابة الصحيحة وتلميح بسيط لو غلط
+
+ملاحظة: هذا النص مستخرج تلقائياً من ملف PDF، فممكن يكون فيه ترقيم صفحات أو تكرار رأس/تذييل أو تشويش طفيف بالتنسيق — تجاهل هذي الشوائب وركّز على المحتوى العلمي الفعلي.
+
+رد بصيغة JSON فقط بهذا الشكل تماماً:
+{
+  "title": "عنوان عام مختصر للمادة كلها",
+  "units": [
+    {
+      "title": "عنوان الوحدة",
+      "intro": "جملة تمهيدية تعرّف الموضوع...",
+      "points": ["نقطة أساسية 1", "نقطة أساسية 2", "نقطة أساسية 3"],
+      "examples": ["مثال عملي يوضح الفكرة...", "مثال ثاني..."],
+      "sourceExcerpt": "المقتطف الحرفي من النص الأصلي الخاص بهذي الوحدة...",
+      "concepts": ["مفهوم أساسي 1", "مفهوم أساسي 2"],
+      "minutes": 20,
+      "questions": [
+        {
+          "question": "نص السؤال",
+          "options": ["خيار1", "خيار2", "خيار3", "خيار4"],
+          "correctIndex": 0,
+          "hint": "تلميح يساعد لو جاوبت غلط"
+        }
+      ]
+    }
+  ]
+}
+
+المحتوى الدراسي:
+"""
+${text.slice(0, 25000)}
+"""`;
+      const raw = await callClaude(prompt, system, {
+        maxTokens: 8000,
+        timeoutMs: 90000
+      });
+      const parsed = extractJSON(raw);
+      if (!parsed.units || !Array.isArray(parsed.units) || parsed.units.length === 0) {
+        throw new Error("لم نتمكن من تقسيم هذا المحتوى");
+      }
+      const newUnits = parsed.units.map((u, i) => ({
+        id: "u_" + Date.now() + "_" + i,
+        title: u.title,
+        intro: u.intro || "",
+        points: Array.isArray(u.points) ? u.points : [],
+        examples: Array.isArray(u.examples) ? u.examples : [],
+        summary: u.summary || u.intro || "",
+        // backward-compatible fallback
+        sourceExcerpt: u.sourceExcerpt || u.summary || u.intro || "",
+        concepts: Array.isArray(u.concepts) ? u.concepts : [],
+        minutes: u.minutes || 20,
+        questions: u.questions || [],
+        completed: false,
+        lastScore: null
+      }));
+      if (existingTopic) {
+        // Adding a new file to an existing topic — append units, don't create a new topic
+        onUnitsAdded(existingTopic.id, newUnits);
+      } else {
+        const topic = {
+          id: "t_" + Date.now(),
+          title: title.trim() || parsed.title || "مادة بدون عنوان",
+          createdAt: new Date().toISOString(),
+          units: newUnits
+        };
+        onCreated(topic);
+      }
+    } catch (e) {
+      console.error(e);
+      let msg = "صار خلل وقت تحليل المحتوى. جرب مرة ثانية.";
+      const errStr = String(e && e.message ? e.message : e);
+      if (errStr.includes("abort") || errStr.includes("timeout") || errStr.includes("فشل الاتصال")) {
+        msg = "أخذ التحليل وقت أطول من المتوقع. لو الملف كبير، جرب تقسمه لأجزاء أصغر أو قصّر النص شوي ثم حاول مرة ثانية.";
+      } else if (errStr.includes("JSON") || errStr.includes("Unexpected") || errStr.includes("parse")) {
+        msg = "ما قدرنا نفهم المحتوى بشكل كامل. جرب مرة ثانية، أو قصّر النص شوي.";
+      } else if (errStr.includes("HTTP 429")) {
+        msg = "فيه ضغط على الخدمة حالياً. انتظر دقيقة وحاول مرة ثانية.";
+      } else if (errStr.includes("HTTP")) {
+        msg = "صار خلل بالاتصال بالخدمة. تأكد من الإنترنت وحاول مرة ثانية.";
+      }
+      setErrMsg(msg);
+      setStage("failed");
+    }
+  }
+  if (stage === "extracting") {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "hemma-fade-in",
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "55vh",
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "hemma-pulse",
+      style: {
+        width: 14,
+        height: 14,
+        borderRadius: "50%",
+        background: "var(--accent)",
+        marginBottom: 18
+      }
+    }), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontFamily: "var(--font-display)",
+        fontSize: 19,
+        margin: "0 0 6px"
+      }
+    }, "جاري قراءة الملف..."), /*#__PURE__*/React.createElement("p", {
+      style: {
+        color: "var(--ink-soft)",
+        fontSize: 13.5,
+        margin: 0
+      }
+    }, pdfProgress ? `${pdfProgress.current} من ${pdfProgress.total}` : "نستخرج النص من الملف"));
+  }
+  if (stage === "analyzing") {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "hemma-fade-in",
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "55vh",
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "hemma-pulse",
+      style: {
+        width: 14,
+        height: 14,
+        borderRadius: "50%",
+        background: "var(--accent)",
+        marginBottom: 18
+      }
+    }), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontFamily: "var(--font-display)",
+        fontSize: 19,
+        margin: "0 0 6px"
+      }
+    }, "جاري تقسيم المادة..."), /*#__PURE__*/React.createElement("p", {
+      style: {
+        color: "var(--ink-soft)",
+        fontSize: 13.5,
+        margin: 0,
+        lineHeight: 1.7
+      }
+    }, "نحوّلها لجلسات صغيرة وأسئلة فهم.", /*#__PURE__*/React.createElement("br", null), "عادة تأخذ من 15 إلى 40 ثانية حسب حجم المحتوى."));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in"
+  }, /*#__PURE__*/React.createElement(TopBar, {
+    title: existingTopic ? `أضف ملف إلى «${existingTopic.title}»` : "مادة جديدة",
+    onBack: onCancel
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 20,
+      background: "var(--accent-soft)",
+      borderRadius: 12,
+      padding: 4
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setMode("file"),
+    style: {
+      flex: 1,
+      padding: "10px",
+      borderRadius: 9,
+      border: "none",
+      background: mode === "file" ? "var(--card)" : "transparent",
+      color: mode === "file" ? "var(--ink)" : "var(--ink-soft)",
+      fontWeight: 600,
+      fontSize: 13.5,
+      boxShadow: mode === "file" ? "0 1px 3px rgba(0,0,0,0.08)" : "none"
+    }
+  }, "📄 رفع ملف"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setMode("paste"),
+    style: {
+      flex: 1,
+      padding: "10px",
+      borderRadius: 9,
+      border: "none",
+      background: mode === "paste" ? "var(--card)" : "transparent",
+      color: mode === "paste" ? "var(--ink)" : "var(--ink-soft)",
+      fontWeight: 600,
+      fontSize: 13.5,
+      boxShadow: mode === "paste" ? "0 1px 3px rgba(0,0,0,0.08)" : "none"
+    }
+  }, "✏️ لصق نص")), !existingTopic && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: "block",
+      fontSize: 13.5,
+      color: "var(--ink-soft)",
+      marginBottom: 6
+    }
+  }, "عنوان المادة (اختياري)"), /*#__PURE__*/React.createElement("input", {
+    value: title,
+    onChange: e => setTitle(e.target.value),
+    placeholder: "مثال: قاعدة البيانات - الفصل 4",
+    style: {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: 10,
+      border: "1px solid var(--line)",
+      marginBottom: 18,
+      fontSize: 14.5,
+      fontFamily: "inherit",
+      background: "var(--card)",
+      color: "var(--ink)"
+    }
+  })), mode === "file" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+    ref: fileInputRef,
+    type: "file",
+    accept: ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    onChange: e => handleFileSelected(e.target.files?.[0]),
+    style: {
+      display: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => fileInputRef.current?.click(),
+    style: {
+      width: "100%",
+      border: "1.5px dashed " + (fileName ? "var(--accent)" : "var(--line)"),
+      borderRadius: 14,
+      padding: "32px 20px",
+      background: fileName ? "var(--accent-soft)" : "var(--card)",
+      textAlign: "center",
+      color: fileName ? "var(--accent)" : "var(--ink-soft)"
+    }
+  }, /*#__PURE__*/React.createElement(Icon.upload, {
+    style: {
+      width: 26,
+      height: 26,
+      margin: "0 auto 10px"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14.5,
+      fontWeight: 600,
+      marginBottom: 4
+    }
+  }, fileName ? fileName : "اضغط لاختيار ملف"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5
+    }
+  }, fileName ? `تم استخراج ${text.length.toLocaleString("ar")} حرف من الملف` : "PDF · Word (.docx) · PowerPoint (.pptx)")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: "var(--ink-soft)",
+      margin: "10px 0 0",
+      lineHeight: 1.7
+    }
+  }, "ملاحظة: لو الملف صور ممسوحة (سكان) أو سلايدات بدون نص قابل للتحديد، استخدم خيار «لصق نص» بدل ذلك.")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: "block",
+      fontSize: 13.5,
+      color: "var(--ink-soft)",
+      marginBottom: 6
+    }
+  }, "الصق محتوى المحاضرة أو الملخص هنا"), /*#__PURE__*/React.createElement("textarea", {
+    value: text,
+    onChange: e => setText(e.target.value),
+    placeholder: "انسخ نص المحاضرة، السلايدات، أو الملخص وألصقه هنا...",
+    rows: 12,
+    style: {
+      width: "100%",
+      padding: "14px",
+      borderRadius: 12,
+      border: "1px solid var(--line)",
+      fontSize: 14,
+      lineHeight: 1.8,
+      fontFamily: "inherit",
+      resize: "vertical",
+      background: "var(--card)",
+      color: "var(--ink)"
+    }
+  })), errMsg && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14,
+      background: "var(--warm-soft)",
+      color: "var(--warm)",
+      padding: "12px 14px",
+      borderRadius: 10,
+      fontSize: 13.5,
+      lineHeight: 1.7
+    }
+  }, errMsg), /*#__PURE__*/React.createElement("button", {
+    onClick: handleAnalyze,
+    disabled: !text.trim(),
+    style: {
+      width: "100%",
+      marginTop: 20,
+      background: text.trim() ? "var(--accent)" : "var(--line)",
+      color: text.trim() ? "#fff" : "var(--ink-soft)",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 15,
+      fontWeight: 600
+    }
+  }, "قسّمها لخطة مذاكرة"));
+}
+
+// ============================================================
+// PLAN VIEW
+// ============================================================
+function PlanView({
+  topic,
+  sessions,
+  onBack,
+  onStartUnit,
+  onAddFile
+}) {
+  const totalMin = topic.units.reduce((a, u) => a + u.minutes, 0);
+  const done = topic.units.filter(u => u.completed).length;
+
+  // find weakest completed unit for suggestion
+  const weakest = topic.units.filter(u => u.completed && u.lastScore !== null).sort((a, b) => a.lastScore - b.lastScore)[0];
+  const nextIncomplete = topic.units.findIndex(u => !u.completed);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in"
+  }, /*#__PURE__*/React.createElement(TopBar, {
+    title: topic.title,
+    onBack: onBack,
+    right: /*#__PURE__*/React.createElement("button", {
+      onClick: onAddFile,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        background: "none",
+        border: "1px solid var(--line)",
+        borderRadius: 10,
+        padding: "8px 12px",
+        color: "var(--accent)",
+        fontSize: 13,
+        fontWeight: 600
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 15
+      }
+    }, "+"), "أضف ملف")
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginBottom: 22
+    }
+  }, /*#__PURE__*/React.createElement(StatPill, {
+    label: "وحدة مكتملة",
+    value: `${done}/${topic.units.length}`
+  }), /*#__PURE__*/React.createElement(StatPill, {
+    label: "دقيقة إجمالية",
+    value: totalMin
+  })), weakest && weakest.lastScore < 0.7 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "var(--warm-soft)",
+      borderRadius: 12,
+      padding: "13px 15px",
+      marginBottom: 20,
+      fontSize: 13.5,
+      color: "var(--ink)",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement(Icon.spark, {
+    style: {
+      width: 16,
+      height: 16,
+      color: "var(--warm)",
+      flexShrink: 0,
+      marginTop: 2
+    }
+  }), /*#__PURE__*/React.createElement("span", null, "نتيجتك في «", weakest.title, "» كانت ", Math.round(weakest.lastScore * 100), "٪ — تقدر ترجع لها من الصفحة الرئيسية وقت تبي.")), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 14,
+      color: "var(--ink-soft)",
+      fontWeight: 600,
+      margin: "0 0 12px"
+    }
+  }, "خطة الجلسات"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, topic.units.map((u, i) => {
+    const isNext = i === nextIncomplete;
+    return /*#__PURE__*/React.createElement("div", {
+      key: u.id,
+      style: {
+        background: "var(--card)",
+        border: "1px solid " + (isNext ? "var(--accent)" : "var(--line)"),
+        borderRadius: 14,
+        padding: "15px 16px",
+        opacity: u.completed ? 0.85 : 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, u.completed ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 22,
+        height: 22,
+        borderRadius: "50%",
+        background: "var(--accent)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement(Icon.check, {
+      style: {
+        width: 12,
+        height: 12,
+        color: "#fff"
+      }
+    })) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 22,
+        height: 22,
+        borderRadius: "50%",
+        border: "1.5px solid var(--line)",
+        flexShrink: 0
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 600,
+        fontSize: 14.5
+      }
+    }, u.title)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12,
+        color: "var(--ink-soft)",
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        whiteSpace: "nowrap"
+      }
+    }, /*#__PURE__*/React.createElement(Icon.clock, {
+      style: {
+        width: 13,
+        height: 13
+      }
+    }), u.minutes, " د")), u.completed && u.lastScore !== null && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: "var(--ink-soft)",
+        marginBottom: 8
+      }
+    }, "نتيجتك: ", Math.round(u.lastScore * 100), "٪"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => onStartUnit(i),
+      style: {
+        width: "100%",
+        background: u.completed ? "transparent" : "var(--accent)",
+        color: u.completed ? "var(--accent)" : "#fff",
+        border: u.completed ? "1px solid var(--accent)" : "none",
+        borderRadius: 10,
+        padding: "10px",
+        fontSize: 13.5,
+        fontWeight: 600,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6
+      }
+    }, /*#__PURE__*/React.createElement(Icon.play, {
+      style: {
+        width: 13,
+        height: 13
+      }
+    }), u.completed ? "ذاكر من جديد" : "ابدأ الجلسة"));
+  })));
+}
+
+// ============================================================
+// FOCUS SESSION (timer + summary content, minimal distraction)
+// ============================================================
+function FocusSession({
+  topic,
+  unitIndex,
+  mood,
+  onAbort,
+  onFinishStudy,
+  onDistracted
+}) {
+  const unit = topic.units[unitIndex];
+  // Adapt session duration based on mood
+  const baseMins = unit.minutes;
+  const adaptedMins = mood === "tired" ? Math.max(10, Math.round(baseMins * 0.6)) : mood === "stressed" ? Math.max(10, Math.round(baseMins * 0.5)) : baseMins;
+  const totalSeconds = adaptedMins * 60;
+  const elapsedRef = useRef(0); // seconds actually focused
+  const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
+  const [running, setRunning] = useState(true);
+  const intervalRef = useRef(null);
+
+  // Dark room mode: dim background
+  const bgColor = "#1A1917";
+  const textColor = "#E8E3D8";
+  useEffect(() => {
+    function handleBlur() {
+      // User left — pause and trigger distraction screen
+      setRunning(false);
+      clearInterval(intervalRef.current);
+      const elapsedMin = Math.round(elapsedRef.current / 60);
+      onDistracted(elapsedMin);
+    }
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, []);
+  useEffect(() => {
+    if (!running) return;
+    intervalRef.current = setInterval(() => {
+      elapsedRef.current += 1;
+      setSecondsLeft(s => {
+        if (s <= 1) {
+          clearInterval(intervalRef.current);
+          setRunning(false);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalRef.current);
+  }, [running]);
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+  const pct = 1 - secondsLeft / totalSeconds;
+  const timeUp = secondsLeft === 0;
+  const moodNote = mood === "tired" ? `وضعك متعب اليوم — قلّصنا الجلسة لـ${adaptedMins} دقيقة` : mood === "stressed" ? `وضعك مضغوط — ركّزنا على أهم ${adaptedMins} دقيقة` : null;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      minHeight: "100vh",
+      background: bgColor,
+      color: textColor,
+      padding: "28px 20px 40px",
+      direction: "rtl"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 720,
+      margin: "0 auto",
+      width: "100%",
+      display: "flex",
+      flexDirection: "column",
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 30
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      clearInterval(intervalRef.current);
+      onAbort();
+    },
+    style: {
+      background: "none",
+      border: "none",
+      color: "#73695C",
+      fontSize: 13.5,
+      display: "flex",
+      alignItems: "center",
+      gap: 4
+    }
+  }, /*#__PURE__*/React.createElement(Icon.x, {
+    style: {
+      width: 15,
+      height: 15
+    }
+  }), "خروج"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRunning(r => !r),
+    "aria-label": running ? "إيقاف مؤقت" : "استمرار",
+    style: {
+      background: "none",
+      border: "1px solid #3A3632",
+      borderRadius: 9,
+      padding: 8,
+      color: "#73695C",
+      display: "flex"
+    }
+  }, running ? /*#__PURE__*/React.createElement(Icon.pause, {
+    style: {
+      width: 15,
+      height: 15
+    }
+  }) : /*#__PURE__*/React.createElement(Icon.play, {
+    style: {
+      width: 15,
+      height: 15
+    }
+  }))), moodNote && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      fontSize: 12,
+      color: "#73695C",
+      marginBottom: 16
+    }
+  }, moodNote), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      marginBottom: 30
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      width: 150,
+      height: 150
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 150 150",
+    style: {
+      width: 150,
+      height: 150,
+      transform: "rotate(-90deg)"
+    }
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "75",
+    cy: "75",
+    r: "66",
+    fill: "none",
+    stroke: "#2D2A26",
+    strokeWidth: "8"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "75",
+    cy: "75",
+    r: "66",
+    fill: "none",
+    stroke: timeUp ? "#C4604A" : "#6B7F73",
+    strokeWidth: "8",
+    strokeLinecap: "round",
+    strokeDasharray: 2 * Math.PI * 66,
+    strokeDashoffset: 2 * Math.PI * 66 * (1 - pct),
+    style: {
+      transition: "stroke-dashoffset 1s linear"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      inset: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 32,
+      fontWeight: 700,
+      color: textColor
+    }
+  }, String(mins).padStart(2, "0"), ":", String(secs).padStart(2, "0"))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 26
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 20,
+      margin: 0,
+      color: textColor
+    }
+  }, unit.title)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#232120",
+      border: "1px solid #2D2A26",
+      borderRadius: 16,
+      padding: "22px",
+      flex: 1,
+      fontSize: 15,
+      lineHeight: 1.9,
+      color: "#C8C0B4"
+    }
+  }, unit.points && unit.points.length > 0 ? /*#__PURE__*/React.createElement(React.Fragment, null, unit.intro && /*#__PURE__*/React.createElement("p", {
+    style: {
+      margin: "0 0 18px",
+      color: "#D8D0C4"
+    }
+  }, unit.intro), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12,
+      marginBottom: unit.examples && unit.examples.length ? 22 : 0
+    }
+  }, unit.points.map((pt, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      gap: 10,
+      alignItems: "flex-start"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#6B7F73",
+      fontWeight: 700,
+      flexShrink: 0,
+      marginTop: 1
+    }
+  }, "•"), /*#__PURE__*/React.createElement("span", null, pt)))), unit.examples && unit.examples.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#1E1D1B",
+      borderRadius: 12,
+      padding: "16px 18px",
+      borderRight: "3px solid #6B7F73"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: "#8B8275",
+      marginBottom: 10,
+      fontWeight: 600
+    }
+  }, "أمثلة توضيحية"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, unit.examples.map((ex, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      gap: 8,
+      alignItems: "flex-start"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#C4604A",
+      flexShrink: 0
+    }
+  }, "↩"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#BDB5A8"
+    }
+  }, ex)))))) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      lineHeight: 2
+    }
+  }, unit.summary)), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      clearInterval(intervalRef.current);
+      onFinishStudy(Math.round(elapsedRef.current / 60));
+    },
+    style: {
+      marginTop: 24,
+      width: "100%",
+      background: timeUp ? "#6B7F73" : "transparent",
+      color: timeUp ? "#fff" : "#73695C",
+      border: timeUp ? "none" : "1px solid #2D2A26",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 14.5,
+      fontWeight: 600
+    }
+  }, timeUp ? "خلصت — نروح للأسئلة" : "خلصت — نروح للأسئلة")));
+}
+
+// ============================================================
+// QUIZ VIEW
+// ============================================================
+function QuizView({
+  topic,
+  unitIndex,
+  onDone
+}) {
+  const unit = topic.units[unitIndex];
+  const questions = unit.questions && unit.questions.length > 0 ? unit.questions : [];
+  const [qIndex, setQIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [answeredCorrectly, setAnsweredCorrectly] = useState(null);
+  useEffect(() => {
+    if (questions.length === 0) {
+      // No questions generated — skip straight to done
+      onDone({
+        correct: 1,
+        total: 1
+      });
+    }
+  }, []);
+  if (questions.length === 0) {
+    return null;
+  }
+  const q = questions[qIndex];
+  function selectOption(idx) {
+    if (selected !== null) return;
+    setSelected(idx);
+    const isCorrect = idx === q.correctIndex;
+    setAnsweredCorrectly(isCorrect);
+    if (isCorrect) setCorrectCount(c => c + 1);else setShowHint(true);
+  }
+  function next() {
+    if (qIndex + 1 < questions.length) {
+      setQIndex(i => i + 1);
+      setSelected(null);
+      setShowHint(false);
+      setAnsweredCorrectly(null);
+    } else {
+      onDone({
+        correct: correctCount,
+        total: questions.length
+      });
+    }
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 22
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: 8,
+      fontSize: 12.5,
+      color: "var(--ink-soft)"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "سؤال ", qIndex + 1, " من ", questions.length), /*#__PURE__*/React.createElement("span", null, unit.title)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 5,
+      borderRadius: 4,
+      background: "var(--line)",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: `${(qIndex + (selected !== null ? 1 : 0)) / questions.length * 100}%`,
+      height: "100%",
+      background: "var(--accent)",
+      transition: "width 0.4s ease"
+    }
+  }))), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 19,
+      lineHeight: 1.6,
+      margin: "0 0 22px"
+    }
+  }, q.question), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, q.options.map((opt, idx) => {
+    let bg = "var(--card)";
+    let border = "var(--line)";
+    let color = "var(--ink)";
+    if (selected !== null) {
+      if (idx === q.correctIndex) {
+        bg = "var(--accent-soft)";
+        border = "var(--accent)";
+      } else if (idx === selected) {
+        bg = "var(--warm-soft)";
+        border = "var(--warm)";
+      }
+    }
+    return /*#__PURE__*/React.createElement("button", {
+      key: idx,
+      onClick: () => selectOption(idx),
+      disabled: selected !== null,
+      style: {
+        textAlign: "right",
+        padding: "14px 16px",
+        borderRadius: 12,
+        border: "1.5px solid " + border,
+        background: bg,
+        color,
+        fontSize: 14.5,
+        lineHeight: 1.6,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, opt), selected !== null && idx === q.correctIndex && /*#__PURE__*/React.createElement(Icon.check, {
+      style: {
+        width: 16,
+        height: 16,
+        flexShrink: 0
+      }
+    }), selected !== null && idx === selected && idx !== q.correctIndex && /*#__PURE__*/React.createElement(Icon.x, {
+      style: {
+        width: 16,
+        height: 16,
+        flexShrink: 0
+      }
+    }));
+  })), showHint && q.hint && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16,
+      background: "var(--warm-soft)",
+      borderRadius: 10,
+      padding: "12px 14px",
+      fontSize: 13.5,
+      color: "var(--ink)"
+    }
+  }, "💡 ", q.hint), selected !== null && /*#__PURE__*/React.createElement("button", {
+    onClick: next,
+    style: {
+      marginTop: 22,
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 14.5,
+      fontWeight: 600
+    }
+  }, qIndex + 1 < questions.length ? "السؤال التالي" : "عرض النتيجة"));
+}
+
+// ============================================================
+// DISCUSSION VIEW — grounded real conversation with the source material
+// ============================================================
+function DiscussionView({
+  topic,
+  unitIndex,
+  onDone,
+  onExit
+}) {
+  const unit = topic.units[unitIndex];
+  const [messages, setMessages] = useState([]); // [{ role: 'assistant'|'user', text }]
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [turnCount, setTurnCount] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [finalVerdict, setFinalVerdict] = useState(null); // true/false
+  const scrollRef = useRef(null);
+  const startedRef = useRef(false);
+  const system = `أنت مساعد مذاكرة يناقش الطالب في وحدة دراسية محددة بالعربي. 
 قواعد صارمة:
-- أجب دائماً بالعربية الفصحى المبسطة
-- استخدم التنسيق الجميل (عناوين ## وعناوين فرعية ### ونقاط وأرقام)
-- كن واضحاً وموجزاً وشجّع الطالب
-- إذا كانت المادة بلغة أخرى، اشرحها بالعربية`;
-  return extra ? base + '\n' + extra : base;
-}
+- اعتمد فقط على "النص المرجعي" المعطى لك أدناه — لا تستخدم معرفتك العامة، ولا تضيف معلومات خارج هذا النص.
+- اطرح سؤال واحد مفتوح في كل مرة يتحقق من فهم الطالب لمفهوم أساسي بالوحدة (مو سؤال نعم/لا).
+- لما يجاوب الطالب: قيّم إجابته بالرجوع الدقيق للنص المرجعي. وضّح بإيجاز ولطف إذا كان صحيح، جزئي، أو خاطئ — واستشهد بما يقوله النص فعلاً.
+- إذا كانت إجابته ضعيفة أو فيها لخبطة، اسأل سؤال متابعة أعمق على نفس النقطة بالضبط (لا تنتقل لموضوع جديد) لمحاولة ثانية.
+- إذا كانت إجابته صحيحة ومفهومة، انتقل لنقطة أخرى مهمة بالوحدة، أو إذا غطيتوا أهم النقاط، اختم المحادثة.
+- خفّف اللهجة، كن مشجعاً ومباشراً، بدون مبالغة أو حشو.
+- لا تتجاوز 3 إلى 4 جمل في كل رد.
 
-// ── Build messages ─────────────────────────────────────────
-function buildAnalysisMessages() {
-  const prompt = `اقرأ هذه المادة الدراسية وقدّم:
-## الملخص الشامل
-(3-5 جمل تغطي الفكرة الرئيسية)
+عندك حد أقصى 4 أسئلة بهذي المحادثة. في آخر رد لك، إذا قررت إنهاء المحادثة (لأن الطالب فهم كفاية أو وصلتوا للحد الأقصى)، أضف بآخر ردك بالضبط هذا الوسم: [DONE:PASS] إذا كان فهمه جيد بشكل عام، أو [DONE:RETRY] إذا كان فهمه ضعيف ويحتاج يرجع يذاكر الوحدة. لا تضيف هذا الوسم إلا لما تنهي المحادثة فعلياً.
 
-## الأفكار والنقاط الرئيسية
-(5-8 نقاط مهمة)
-
-## المصطلحات الأساسية
-(إذا وجدت، اشرحها باختصار)
-
-## نصيحة الدراسة
-(جملة أو اثنتان تحفّز الطالب)
-
-${studyText ? 'المادة:\n\n' + studyText.slice(0, 8000) : ''}`;
-
-  if (studyImg) {
-    return [{ role: 'user', content: [
-      { type: 'image', source: { type: 'base64', media_type: studyImg.type, data: studyImg.data } },
-      { type: 'text', text: prompt }
-    ]}];
+النص المرجعي للوحدة:
+"""
+${unit.sourceExcerpt}
+"""`;
+  function buildHistoryPrompt(history, newUserMsg) {
+    let convo = history.map(m => (m.role === "assistant" ? "المساعد: " : "الطالب: ") + m.text).join("\n");
+    if (newUserMsg) convo += (convo ? "\n" : "") + "الطالب: " + newUserMsg;
+    return convo;
   }
-  return [{ role: 'user', content: prompt }];
+  async function getAssistantReply(history, newUserMsg) {
+    const convoText = buildHistoryPrompt(history, newUserMsg);
+    const prompt = newUserMsg ? `استمر بالمحادثة. هذا ما دار حتى الآن:\n\n${convoText}\n\nرد على آخر إجابة من الطالب حسب القواعد.` : `ابدأ المحادثة بسؤال مفتوح واحد عن أهم مفهوم بهذي الوحدة، بناءً على النص المرجعي فقط.`;
+    const raw = await callClaude(prompt, system, {
+      maxTokens: 700,
+      timeoutMs: 45000
+    });
+    let text = raw;
+    let verdict = null;
+    const doneMatch = raw.match(/\[DONE:(PASS|RETRY)\]/);
+    if (doneMatch) {
+      verdict = doneMatch[1] === "PASS";
+      text = raw.replace(/\[DONE:(PASS|RETRY)\]/, "").trim();
+    }
+    return {
+      text,
+      verdict
+    };
+  }
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    (async () => {
+      try {
+        const {
+          text
+        } = await getAssistantReply([], null);
+        setMessages([{
+          role: "assistant",
+          text
+        }]);
+      } catch (e) {
+        console.error(e);
+        setMessages([{
+          role: "assistant",
+          text: "تعذر علينا فتح المناقشة الآن. تقدر تكمل للنتيجة."
+        }]);
+        setFinalVerdict(true);
+        setFinished(true);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
+  async function sendAnswer() {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim();
+    const newMessages = [...messages, {
+      role: "user",
+      text: userMsg
+    }];
+    setMessages(newMessages);
+    setInput("");
+    setLoading(true);
+    try {
+      const {
+        text,
+        verdict
+      } = await getAssistantReply(messages, userMsg);
+      setMessages([...newMessages, {
+        role: "assistant",
+        text
+      }]);
+      const nextTurn = turnCount + 1;
+      setTurnCount(nextTurn);
+      if (verdict !== null || nextTurn >= 4) {
+        setFinalVerdict(verdict !== null ? verdict : true);
+        setFinished(true);
+      }
+    } catch (e) {
+      console.error(e);
+      setMessages([...newMessages, {
+        role: "assistant",
+        text: "صار خلل بالاتصال. تقدر تكمل للنتيجة."
+      }]);
+      setFinalVerdict(true);
+      setFinished(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      minHeight: "78vh"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: "var(--ink-soft)",
+      marginBottom: 4
+    }
+  }, "مناقشة سريعة"), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 19,
+      margin: 0
+    }
+  }, unit.title)), /*#__PURE__*/React.createElement("button", {
+    onClick: onExit,
+    style: {
+      background: "none",
+      border: "none",
+      color: "var(--ink-soft)",
+      fontSize: 13,
+      display: "flex",
+      alignItems: "center",
+      gap: 4,
+      padding: 4
+    }
+  }, /*#__PURE__*/React.createElement(Icon.x, {
+    style: {
+      width: 15,
+      height: 15
+    }
+  }), "خروج")), /*#__PURE__*/React.createElement("div", {
+    ref: scrollRef,
+    style: {
+      flex: 1,
+      overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      gap: 12,
+      background: "var(--card)",
+      border: "1px solid var(--line)",
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 14,
+      minHeight: 280,
+      maxHeight: 420
+    }
+  }, messages.map((m, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      alignSelf: m.role === "assistant" ? "flex-start" : "flex-end",
+      maxWidth: "85%",
+      background: m.role === "assistant" ? "var(--accent-soft)" : "var(--warm-soft)",
+      color: "var(--ink)",
+      borderRadius: 14,
+      padding: "11px 14px",
+      fontSize: 14,
+      lineHeight: 1.7
+    }
+  }, m.text)), loading && /*#__PURE__*/React.createElement("div", {
+    style: {
+      alignSelf: "flex-start",
+      display: "flex",
+      gap: 4,
+      padding: "8px 4px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "hemma-pulse",
+    style: {
+      width: 6,
+      height: 6,
+      borderRadius: "50%",
+      background: "var(--accent)"
+    }
+  }))), !finished ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: input,
+    onChange: e => setInput(e.target.value),
+    onKeyDown: e => e.key === "Enter" && sendAnswer(),
+    placeholder: "اكتب إجابتك هنا...",
+    disabled: loading,
+    style: {
+      flex: 1,
+      padding: "13px 15px",
+      borderRadius: 12,
+      border: "1px solid var(--line)",
+      fontSize: 14,
+      fontFamily: "inherit",
+      background: "var(--card)",
+      color: "var(--ink)"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: sendAnswer,
+    disabled: !input.trim() || loading,
+    style: {
+      background: input.trim() && !loading ? "var(--accent)" : "var(--line)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "0 20px",
+      fontSize: 14,
+      fontWeight: 600
+    }
+  }, "إرسال")) : /*#__PURE__*/React.createElement("button", {
+    onClick: () => onDone(finalVerdict),
+    style: {
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 14.5,
+      fontWeight: 600
+    }
+  }, "عرض النتيجة النهائية"));
 }
 
-// ── Claude API call ────────────────────────────────────────
-async function callClaude(messages, sys) {
-  const res = await fetch('/api/claude', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      system: sys,
-      messages
-    })
+// ============================================================
+// SESSION SUMMARY
+// ============================================================
+function SessionSummary({
+  topic,
+  unitIndex,
+  sessions,
+  onBackToPlan,
+  onHome
+}) {
+  const unit = topic.units[unitIndex];
+  const score = unit.lastScore || 0;
+  const pct = Math.round(score * 100);
+  const good = score >= 0.7;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in",
+    style: {
+      textAlign: "center",
+      paddingTop: 30
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 84,
+      height: 84,
+      borderRadius: "50%",
+      background: good ? "var(--accent-soft)" : "var(--warm-soft)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "0 auto 20px"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 28,
+      fontWeight: 700,
+      color: good ? "var(--accent)" : "var(--warm)"
+    }
+  }, pct, "٪")), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 22,
+      margin: "0 0 8px"
+    }
+  }, good ? "أحسنتِ، فهمك واضح" : "نتيجة لا بأس بها، بس فيه مجال نرسّخ أكثر"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14,
+      lineHeight: 1.8,
+      margin: "0 0 30px"
+    }
+  }, "خلصت وحدة «", unit.title, "» من «", topic.title, "»", !good && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("br", null), "ننصحك ترجع تذاكر هذي الوحدة مرة ثانية لاحقاً.")), /*#__PURE__*/React.createElement("button", {
+    onClick: onBackToPlan,
+    style: {
+      width: "100%",
+      background: "var(--accent)",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 14.5,
+      fontWeight: 600,
+      marginBottom: 10
+    }
+  }, "رجوع لخطة المادة"), /*#__PURE__*/React.createElement("button", {
+    onClick: onHome,
+    style: {
+      width: "100%",
+      background: "transparent",
+      color: "var(--ink-soft)",
+      border: "1px solid var(--line)",
+      borderRadius: 12,
+      padding: "15px",
+      fontSize: 14
+    }
+  }, "الصفحة الرئيسية"));
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function Dashboard({
+  topics,
+  sessions,
+  distractions,
+  focusLog,
+  onBack
+}) {
+  const totalFocusMin = focusLog.reduce((a, f) => a + (f.minutes || 0), 0);
+  const avgScore = sessions.length > 0 ? Math.round(sessions.reduce((a, s) => a + s.correct / s.total, 0) / sessions.length * 100) : null;
+
+  // Avg focus duration per session block
+  const avgFocusMin = focusLog.length > 0 ? Math.round(focusLog.reduce((a, f) => a + f.minutes, 0) / focusLog.length) : null;
+
+  // Last week vs this week avg focus
+  const now = Date.now();
+  const oneWeek = 7 * 24 * 60 * 60 * 1000;
+  const thisWeekLog = focusLog.filter(f => now - new Date(f.date).getTime() < oneWeek);
+  const lastWeekLog = focusLog.filter(f => {
+    const age = now - new Date(f.date).getTime();
+    return age >= oneWeek && age < 2 * oneWeek;
   });
+  const thisWeekAvg = thisWeekLog.length ? Math.round(thisWeekLog.reduce((a, f) => a + f.minutes, 0) / thisWeekLog.length) : null;
+  const lastWeekAvg = lastWeekLog.length ? Math.round(lastWeekLog.reduce((a, f) => a + f.minutes, 0) / lastWeekLog.length) : null;
+  const improving = thisWeekAvg && lastWeekAvg && thisWeekAvg > lastWeekAvg;
 
-  if (!res.ok) {
-    let errMsg = `خطأ ${res.status}`;
-    try { const d = await res.json(); errMsg = d.error?.message || d.error || errMsg; } catch {}
-    throw new Error(errMsg);
-  }
-
-  const data = await res.json();
-  return data.content[0].text;
-}
-
-// ── Render dashboard ───────────────────────────────────────
-function renderDashboard(summary) {
-  document.getElementById('dashName').textContent = '📄 ' + fileName;
-  document.getElementById('summaryContent').innerHTML = marked.parse(summary);
-
-  document.getElementById('quizContent').innerHTML = `
-    <div class="empty-state">
-      <div class="eicon">🎯</div>
-      <p>اضغط على الزر أعلاه لتوليد أسئلة من المادة</p>
-    </div>`;
-
-  document.getElementById('chatBox').innerHTML = `
-    <div class="msg ai">
-      <div class="avatar">🤖</div>
-      <div class="bubble">مرحباً! قرأت المادة وأنا جاهز للإجابة على أسئلتك 😊</div>
-    </div>`;
-
-  chatHistory = [];
-
-  // Reset tabs
-  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
-  document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === 0));
-
-  showView('v-dash');
-}
-
-// ── Quiz ───────────────────────────────────────────────────
-async function generateQuiz() {
-  const btn = document.getElementById('quizBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ جاري التوليد...';
-
-  try {
-    const sys = systemPrompt(`عند توليد الأسئلة استخدم هذا التنسيق بالضبط لكل سؤال (لا تغيّره):
-[Q] نص السؤال
-[A] نص الإجابة الكاملة
-[END]`);
-
-    const txt = studyText ? `بناءً على المادة التالية:\n\n${studyText.slice(0, 6000)}\n\nأنشئ 8 أسئلة دراسية متنوعة (فهم، تحليل، تطبيق) مع إجاباتها.`
-                           : 'أنشئ 8 أسئلة دراسية متنوعة مع إجاباتها بناءً على الصورة الدراسية.';
-
-    let messages;
-    if (studyImg) {
-      messages = [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: studyImg.type, data: studyImg.data } },
-        { type: 'text', text: txt }
-      ]}];
-    } else {
-      messages = [{ role: 'user', content: txt }];
+  // Top distraction reasons
+  const distractionCounts = distractions.reduce((acc, d) => {
+    acc[d.reason] = (acc[d.reason] || 0) + 1;
+    return acc;
+  }, {});
+  const topReason = Object.entries(distractionCounts).sort((a, b) => b[1] - a[1])[0];
+  const reasonLabels = {
+    phone: "📱 الجوال",
+    bored: "😶 الملل",
+    tired: "😴 التعب",
+    unclear: "🤔 الغموض",
+    other: "🌀 أسباب أخرى",
+    dismissed: "تخطى"
+  };
+  const weakSpots = sessions.filter(s => s.correct / s.total < 0.7).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+  const recentSessions = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
+  const hasData = sessions.length > 0 || focusLog.length > 0;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "hemma-fade-in"
+  }, /*#__PURE__*/React.createElement(TopBar, {
+    title: "تقدمي",
+    onBack: onBack
+  }), !hasData ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "40px 0",
+      color: "var(--ink-soft)"
     }
-
-    const result = await callClaude(messages, sys);
-    renderQuiz(result);
-  } catch (err) {
-    alert('خطأ في توليد الأسئلة: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🎲 ولّد أسئلة جديدة';
-  }
-}
-
-function renderQuiz(text) {
-  const items   = text.split('[END]').filter(b => b.trim());
-  const container = document.getElementById('quizContent');
-
-  const htmlParts = items.map((block, idx) => {
-    const qm = block.match(/\[Q\]\s*([\s\S]+?)\s*\[A\]/);
-    const am = block.match(/\[A\]\s*([\s\S]+?)$/);
-    if (!qm || !am) return '';
-    return `
-      <div class="quiz-item">
-        <div class="quiz-q">السؤال ${idx + 1}: ${qm[1].trim()}</div>
-        <button class="btn-ans" onclick="toggleAns(this)">اعرض الإجابة</button>
-        <div class="quiz-ans">${am[1].trim()}</div>
-      </div>`;
-  }).join('');
-
-  container.innerHTML = htmlParts || `<div class="empty-state"><div class="eicon">❌</div><p>لم يتم توليد أسئلة. حاول مجدداً.</p></div>`;
-}
-
-function toggleAns(btn) {
-  const a    = btn.nextElementSibling;
-  const show = a.classList.toggle('show');
-  btn.textContent = show ? 'إخفاء الإجابة' : 'اعرض الإجابة';
-}
-
-// ── Chat ───────────────────────────────────────────────────
-async function sendChat() {
-  const input   = document.getElementById('chatInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const msg     = input.value.trim();
-  if (!msg) return;
-
-  sendBtn.disabled = true;
-  input.value = '';
-  appendMsg('user', msg);
-
-  const typingId = 'typing-' + Date.now();
-  appendMsg('ai', '<span class="dots"><span>●</span><span>●</span><span>●</span></span>', typingId);
-
-  try {
-    const sys = systemPrompt(
-      studyText ? `المادة الدراسية للطالب:\n\n${studyText.slice(0, 6000)}` : ''
-    );
-
-    let messages;
-
-    if (chatHistory.length === 0 && studyImg) {
-      // First message — include the image
-      messages = [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: studyImg.type, data: studyImg.data } },
-          { type: 'text', text: msg }
-        ]
-      }];
-    } else {
-      chatHistory.push({ role: 'user', content: msg });
-      messages = [...chatHistory];
+  }, /*#__PURE__*/React.createElement("p", null, "ما عندك جلسات مكتملة بعد. ابدأ أول جلسة عشان نبدأ نتابع تقدمك.")) : /*#__PURE__*/React.createElement(React.Fragment, null, avgFocusMin && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "var(--card)",
+      border: "1px solid var(--line)",
+      borderRadius: 14,
+      padding: "18px 18px",
+      marginBottom: 16
     }
-
-    const reply = await callClaude(messages, sys);
-
-    // Update history (use plain text for tracking)
-    if (chatHistory.length === 0 || chatHistory[chatHistory.length - 1].role !== 'user') {
-      chatHistory.push({ role: 'user', content: msg });
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "var(--ink-soft)",
+      marginBottom: 10,
+      fontWeight: 600
     }
-    chatHistory.push({ role: 'assistant', content: reply });
-
-    const el = document.getElementById(typingId);
-    if (el) el.querySelector('.bubble').innerHTML = marked.parse(reply);
-
-  } catch (err) {
-    const el = document.getElementById(typingId);
-    if (el) el.querySelector('.bubble').textContent = '⚠️ حدث خطأ، حاول مجدداً.';
-  } finally {
-    sendBtn.disabled = false;
-    input.focus();
-    scrollChat();
-  }
+  }, "متوسط التركيز"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "flex-end",
+      gap: 6,
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontSize: 36,
+      fontWeight: 700,
+      color: "var(--accent)"
+    }
+  }, avgFocusMin), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 14,
+      marginBottom: 6
+    }
+  }, "دقيقة قبل التشتت")), thisWeekAvg && lastWeekAvg && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: improving ? "var(--accent)" : "var(--ink-soft)"
+    }
+  }, improving ? `⬆️ تحسّن — الأسبوع الماضي كان ${lastWeekAvg} دقيقة` : `الأسبوع الماضي: ${lastWeekAvg} دقيقة`)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(StatPill, {
+    label: "إجمالي دقايق التركيز",
+    value: totalFocusMin
+  }), avgScore !== null && /*#__PURE__*/React.createElement(StatPill, {
+    label: "متوسط الفهم",
+    value: avgScore + "٪"
+  })), topReason && topReason[0] !== "dismissed" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "var(--warm-soft)",
+      borderRadius: 12,
+      padding: "13px 16px",
+      marginBottom: 16,
+      fontSize: 13.5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "var(--ink-soft)"
+    }
+  }, "أكثر سبب تشتت: "), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 600
+    }
+  }, reasonLabels[topReason[0]] || topReason[0], " (", topReason[1], " ", topReason[1] === 1 ? "مرة" : "مرات", ")")), weakSpots.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 14,
+      color: "var(--ink-soft)",
+      fontWeight: 600,
+      margin: "0 0 10px"
+    }
+  }, "نقاط تحتاج مراجعة"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, weakSpots.map(s => /*#__PURE__*/React.createElement("div", {
+    key: s.id,
+    style: {
+      background: "var(--warm-soft)",
+      borderRadius: 10,
+      padding: "11px 14px",
+      fontSize: 13.5,
+      display: "flex",
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, s.unitTitle), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "var(--warm)",
+      fontWeight: 600
+    }
+  }, Math.round(s.correct / s.total * 100), "٪"))))), recentSessions.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 14,
+      color: "var(--ink-soft)",
+      fontWeight: 600,
+      margin: "0 0 10px"
+    }
+  }, "آخر الجلسات"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, recentSessions.map(s => /*#__PURE__*/React.createElement("div", {
+    key: s.id,
+    style: {
+      background: "var(--card)",
+      border: "1px solid var(--line)",
+      borderRadius: 10,
+      padding: "12px 14px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      fontSize: 13
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      marginBottom: 2
+    }
+  }, s.unitTitle), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "var(--ink-soft)",
+      fontSize: 12
+    }
+  }, formatDate(s.date))), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "var(--accent)",
+      fontWeight: 600
+    }
+  }, Math.round(s.correct / s.total * 100), "٪")))))));
 }
-
-function appendMsg(role, html, id) {
-  const box = document.getElementById('chatBox');
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  if (id) div.id = id;
-  div.innerHTML = `
-    <div class="avatar">${role === 'user' ? '👤' : '🤖'}</div>
-    <div class="bubble">${html}</div>`;
-  box.appendChild(div);
-  scrollChat();
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("ar-SA", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
-
-function scrollChat() {
-  const b = document.getElementById('chatBox');
-  b.scrollTop = b.scrollHeight;
-}
-</script>
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(/*#__PURE__*/React.createElement(App, null));</script>
 </body>
 </html>

@@ -18,7 +18,7 @@ exports.handler = async function(event) {
   }
 
   const { prompt, system, maxTokens = 4000 } = body;
-  const key = 'AQ.Ab8RN6J30LMJgQ0rBlqAjRdkE0D4Du75AEf6eT3KR0dht4VfeA';
+  const key = 'AQ.Ab8RN6Kc5912buIhLpcWP3c9YF6vtxV5Xai5wE-gauSAChOldQ';
 
   const geminiBody = {
     contents: [{ role: 'user', parts: [{ text: prompt || '' }] }],
@@ -26,12 +26,8 @@ exports.handler = async function(event) {
   };
   if (system) geminiBody.system_instruction = { parts: [{ text: system }] };
 
-  const isBearer = key.startsWith('AQ.');
-  const url = isBearer
-    ? 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
-    : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-  const reqHeaders = { 'Content-Type': 'application/json' };
-  if (isBearer) reqHeaders['Authorization'] = `Bearer ${key}`;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  const reqHeaders = { 'Content-Type': 'application/json', 'X-goog-api-key': key };
 
   try {
     const res = await fetch(url, { method: 'POST', headers: reqHeaders, body: JSON.stringify(geminiBody) });

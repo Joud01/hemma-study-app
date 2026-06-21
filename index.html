@@ -122,33 +122,11 @@ async function saveData(key, value) {
   }
 }
 
-// ---------- Key management ----------
-// Share the app as: https://your-app.vercel.app/#k=YOUR_GOOGLE_API_KEY
-// Students open the link once → key saves to localStorage → works forever on that device.
-(function initKey() {
-  try {
-    const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    const k = params.get("k");
-    if (k) {
-      localStorage.setItem("hemma_k", k);
-      history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-  } catch(e) {}
-})();
-
-function getApiKey() {
-  try { return localStorage.getItem("hemma_k") || ""; } catch { return ""; }
-}
-
-// ---------- Gemini API helper (via /api/claude proxy — handles CORS & both key formats) ----------
+// ---------- Gemini API helper (via /api/claude proxy — handles CORS) ----------
 async function callClaude(promptText, systemText, options = {}) {
   const maxTokens = options.maxTokens || 4000;
   const timeoutMs = options.timeoutMs || 60000;
   const maxRetries = options.maxRetries != null ? options.maxRetries : 2;
-
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error("NO_KEY");
 
   let lastError = null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -158,7 +136,7 @@ async function callClaude(promptText, systemText, options = {}) {
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: promptText, system: systemText, maxTokens, key: apiKey }),
+        body: JSON.stringify({ prompt: promptText, system: systemText, maxTokens }),
         signal: controller.signal
       });
       clearTimeout(timer);
@@ -1952,9 +1930,7 @@ ${text.slice(0, 25000)}
       console.error(e);
       let msg = "صار خلل وقت تحليل المحتوى. جرب مرة ثانية.";
       const errStr = String(e && e.message ? e.message : e);
-      if (errStr.includes("NO_KEY")) {
-        msg = "التطبيق يحتاج رابط التفعيل. تواصلي مع المعلمة للحصول على الرابط الصحيح.";
-      } else if (errStr.includes("abort") || errStr.includes("timeout") || errStr.includes("فشل الاتصال")) {
+      if (errStr.includes("abort") || errStr.includes("timeout") || errStr.includes("فشل الاتصال")) {
         msg = "أخذ التحليل وقت أطول من المتوقع. لو الملف كبير، جرب تقسمه لأجزاء أصغر أو قصّر النص شوي ثم حاول مرة ثانية.";
       } else if (errStr.includes("JSON") || errStr.includes("Unexpected") || errStr.includes("parse")) {
         msg = "ما قدرنا نفهم المحتوى بشكل كامل. جرب مرة ثانية، أو قصّر النص شوي.";

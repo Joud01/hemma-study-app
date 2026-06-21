@@ -17,11 +17,8 @@ exports.handler = async function(event) {
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { prompt, system, maxTokens = 4000, key } = body;
-  if (!key) {
-    return { statusCode: 400, headers: { ...cors, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'NO_KEY' }) };
-  }
+  const { prompt, system, maxTokens = 4000 } = body;
+  const key = 'AQ.Ab8RN6J30LMJgQ0rBlqAjRdkE0D4Du75AEf6eT3KR0dht4VfeA';
 
   const geminiBody = {
     contents: [{ role: 'user', parts: [{ text: prompt || '' }] }],

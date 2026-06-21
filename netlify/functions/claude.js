@@ -14,29 +14,35 @@ exports.handler = async function(event) {
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
-    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Invalid JSON' }) };
+    return { statusCode: 400, headers: { ...cors, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
   const { prompt, system, maxTokens = 4000 } = body;
-  const key = 'AQ.Ab8RN6Kc5912buIhLpcWP3c9YF6vtxV5Xai5wE-gauSAChOldQ';
 
-  const geminiBody = {
-    contents: [{ role: 'user', parts: [{ text: prompt || '' }] }],
-    generationConfig: { maxOutputTokens: maxTokens }
-  };
-  if (system) geminiBody.system_instruction = { parts: [{ text: system }] };
-
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-  const reqHeaders = { 'Content-Type': 'application/json', 'X-goog-api-key': key };
+  const messages = [];
+  if (system) messages.push({ role: 'system', content: system });
+  messages.push({ role: 'user', content: prompt || '' });
 
   try {
-    const res = await fetch(url, { method: 'POST', headers: reqHeaders, body: JSON.stringify(geminiBody) });
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages,
+        max_tokens: maxTokens
+      })
+    });
     const data = await res.json();
     if (!res.ok) {
       return { statusCode: res.status, headers: { ...cors, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: data.error?.message || 'Gemini error' }) };
+        body: JSON.stringify({ error: data.error?.message || 'Groq error' }) };
     }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = data.choices?.[0]?.message?.content || '';
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: [{ type: 'text', text }] }) };
   } catch (err) {

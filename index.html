@@ -122,100 +122,82 @@ async function saveData(key, value) {
   }
 }
 
-// ---------- API endpoint configuration ----------
-// While testing inside Claude.ai (this Artifact), requests go directly to
-// Anthropic and authenticate automatically — no key needed here.
-//
-// FOR PRODUCTION DEPLOYMENT (real students, hosted outside Claude.ai):
-// 1. Deploy the Cloudflare Worker in /cloudflare-proxy
-// 2. Replace the line below with your worker's URL, e.g.:
-//    const API_ENDPOINT = "https://hemma-proxy.YOUR_SUBDOMAIN.workers.dev";
-const API_ENDPOINT = "/api/claude";
-
-// ---------- Per-device ID (used only for rate limiting behind the proxy) ----------
-function getDeviceId() {
+// ---------- Key management ----------
+// Share the app as: https://your-app.vercel.app/#k=YOUR_GOOGLE_API_KEY
+// Students open the link once → key saves to localStorage → works forever on that device.
+(function initKey() {
   try {
-    let id = window.localStorage ? window.localStorage.getItem("hemma_device_id") : null;
-    if (!id) {
-      id = "dev_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
-      if (window.localStorage) window.localStorage.setItem("hemma_device_id", id);
+    const hash = window.location.hash.slice(1);
+    const params = new URLSearchParams(hash);
+    const k = params.get("k");
+    if (k) {
+      localStorage.setItem("hemma_k", k);
+      history.replaceState(null, "", window.location.pathname + window.location.search);
     }
-    return id;
-  } catch {
-    return "dev_unknown";
-  }
+  } catch(e) {}
+})();
+
+function getApiKey() {
+  try { return localStorage.getItem("hemma_k") || ""; } catch { return ""; }
 }
 
-// ---------- Claude API helper ----------
+// ---------- Gemini API helper (direct browser call, no proxy needed) ----------
 async function callClaude(promptText, systemText, options = {}) {
   const maxTokens = options.maxTokens || 4000;
-  const timeoutMs = options.timeoutMs || 60000; // 60s ceiling
+  const timeoutMs = options.timeoutMs || 60000;
   const maxRetries = options.maxRetries != null ? options.maxRetries : 2;
-  const body = {
-    model: "claude-sonnet-4-6",
-    max_tokens: maxTokens,
-    messages: [{
-      role: "user",
-      content: promptText
-    }]
-  };
-  if (systemText) body.system = systemText;
 
-  // When pointed at the proxy, the proxy expects { prompt, system, maxTokens } instead
-  // of the raw Anthropic shape — this keeps the proxy simple and endpoint-agnostic on its end.
-  const isProxy = API_ENDPOINT !== "https://api.anthropic.com/v1/messages";
-  const requestBody = isProxy ? {
-    prompt: promptText,
-    system: systemText,
-    maxTokens
-  } : body;
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("NO_KEY");
+
+  const geminiBody = {
+    contents: [{ role: "user", parts: [{ text: promptText }] }],
+    generationConfig: { maxOutputTokens: maxTokens }
+  };
+  if (systemText) {
+    geminiBody.system_instruction = { parts: [{ text: systemText }] };
+  }
+
   let lastError = null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    // Each attempt gets its own timeout controller
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(API_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-device-id": getDeviceId()
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(geminiBody),
+          signal: controller.signal
+        }
+      );
       clearTimeout(timer);
       if (!res.ok) {
-        // Surface rate-limit messages from the proxy directly to the caller
         if (res.status === 429) {
           let detail = null;
-          try {
-            detail = await res.json();
-          } catch {}
-          if (detail && detail.message) throw new Error(detail.message);
+          try { detail = await res.json(); } catch {}
+          if (detail && detail.error && detail.error.message) throw new Error(detail.error.message);
           if (attempt < maxRetries) {
             lastError = new Error("HTTP 429");
             await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
             continue;
           }
         }
-        // Retry on transient server errors; fail fast on other client errors
         if (res.status >= 500 && attempt < maxRetries) {
           lastError = new Error("HTTP " + res.status);
-          await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // backoff
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
           continue;
         }
         throw new Error("HTTP " + res.status);
       }
       const data = await res.json();
-      const textBlock = (data.content || []).find(b => b.type === "text");
-      const text = textBlock ? textBlock.text : "";
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       if (!text) throw new Error("empty response");
       return text;
     } catch (e) {
       clearTimeout(timer);
       lastError = e;
-      // Retry on abort/network errors
       if (attempt < maxRetries) {
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         continue;
@@ -1981,7 +1963,9 @@ ${text.slice(0, 25000)}
       console.error(e);
       let msg = "صار خلل وقت تحليل المحتوى. جرب مرة ثانية.";
       const errStr = String(e && e.message ? e.message : e);
-      if (errStr.includes("abort") || errStr.includes("timeout") || errStr.includes("فشل الاتصال")) {
+      if (errStr.includes("NO_KEY")) {
+        msg = "التطبيق يحتاج رابط التفعيل. تواصلي مع المعلمة للحصول على الرابط الصحيح.";
+      } else if (errStr.includes("abort") || errStr.includes("timeout") || errStr.includes("فشل الاتصال")) {
         msg = "أخذ التحليل وقت أطول من المتوقع. لو الملف كبير، جرب تقسمه لأجزاء أصغر أو قصّر النص شوي ثم حاول مرة ثانية.";
       } else if (errStr.includes("JSON") || errStr.includes("Unexpected") || errStr.includes("parse")) {
         msg = "ما قدرنا نفهم المحتوى بشكل كامل. جرب مرة ثانية، أو قصّر النص شوي.";

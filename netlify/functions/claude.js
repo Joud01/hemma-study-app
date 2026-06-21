@@ -20,9 +20,11 @@ exports.handler = async function(event) {
 
   const { prompt, system, maxTokens = 4000 } = body;
 
-  const messages = [];
-  if (system) messages.push({ role: 'system', content: system });
-  messages.push({ role: 'user', content: prompt || '' });
+  const systemContent = 'أنت مساعد دراسة ذكي. يجب أن تجيب باللغة العربية فقط دائماً بدون استثناء.\n\n' + (system || '');
+  const messages = [
+    { role: 'system', content: systemContent },
+    { role: 'user', content: prompt || '' }
+  ];
 
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {

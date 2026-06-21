@@ -141,22 +141,20 @@ async function callClaude(promptText, systemText, options = {}) {
       });
       clearTimeout(timer);
       if (!res.ok) {
-        if (res.status === 429) {
-          let detail = null;
-          try { detail = await res.json(); } catch {}
-          if (detail && detail.error && detail.error.message) throw new Error(detail.error.message);
-          if (attempt < maxRetries) {
-            lastError = new Error("HTTP 429");
-            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-            continue;
-          }
-        }
-        if (res.status >= 500 && attempt < maxRetries) {
-          lastError = new Error("HTTP " + res.status);
+        let detail = null;
+        try { detail = await res.json(); } catch {}
+        const errMsg = detail?.error || ("HTTP " + res.status);
+        if (res.status === 429 && attempt < maxRetries) {
+          lastError = new Error(errMsg);
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
           continue;
         }
-        throw new Error("HTTP " + res.status);
+        if (res.status >= 500 && attempt < maxRetries) {
+          lastError = new Error(errMsg);
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw new Error(errMsg);
       }
       const data = await res.json();
       const text = (data.content || []).find(b => b.type === "text")?.text || "";
@@ -1936,8 +1934,8 @@ ${text.slice(0, 25000)}
         msg = "ما قدرنا نفهم المحتوى بشكل كامل. جرب مرة ثانية، أو قصّر النص شوي.";
       } else if (errStr.includes("HTTP 429")) {
         msg = "فيه ضغط على الخدمة حالياً. انتظر دقيقة وحاول مرة ثانية.";
-      } else if (errStr.includes("HTTP")) {
-        msg = "صار خلل بالاتصال بالخدمة. تأكد من الإنترنت وحاول مرة ثانية.";
+      } else {
+        msg = "صار خلل: " + errStr.slice(0, 120);
       }
       setErrMsg(msg);
       setStage("failed");

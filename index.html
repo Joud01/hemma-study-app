@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>همّة | مساعد الدراسة الذكي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.0.0/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: #f0f4ff;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 24px rgba(79,70,229,.35);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-wrap { display: flex; align-items: center; gap: .75rem; }
+    .logo-icon { font-size: 2rem; }
+    .logo-text { font-size: 1.7rem; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+    .logo-sub { font-size: .8rem; color: rgba(255,255,255,.75); margin-top: .1rem; }
+    .header-badge {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      font-size: .78rem;
+      padding: .35rem .9rem;
+      border-radius: 20px;
+      backdrop-filter: blur(6px);
+    }
+
+    /* ── Views ── */
+    .view { display: none; animation: fadeIn .3s ease; }
+    .view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ── Upload view ── */
+    .upload-wrap {
+      max-width: 680px;
+      margin: 3.5rem auto;
+      padding: 0 1.25rem;
+    }
+    .upload-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 2.75rem 2.25rem;
+      box-shadow: 0 12px 48px rgba(79,70,229,.1);
+      text-align: center;
+    }
+    .upload-hero { font-size: 3.5rem; margin-bottom: 1rem; }
+    .upload-title { font-size: 1.65rem; font-weight: 800; color: #1e293b; margin-bottom: .6rem; }
+    .upload-desc { font-size: .95rem; color: #64748b; line-height: 1.75; margin-bottom: 2rem; }
+
+    .drop-zone {
+      border: 2.5px dashed #c7d2fe;
+      border-radius: 16px;
+      padding: 2.25rem 1.5rem;
+      cursor: pointer;
+      transition: all .2s;
+      background: #f8f9ff;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.over { border-color: #6366f1; background: #eef0ff; }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-icon { font-size: 2.25rem; margin-bottom: .6rem; }
+    .drop-label { font-size: 1rem; font-weight: 700; color: #6366f1; }
+    .drop-sub { font-size: .82rem; color: #94a3b8; margin-top: .35rem; }
+
+    .divider {
+      display: flex; align-items: center; gap: 1rem;
+      margin: 1.5rem 0; color: #94a3b8; font-size: .88rem;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+
+    textarea.text-input {
+      width: 100%; min-height: 140px;
+      border: 2px solid #e2e8f0; border-radius: 14px;
+      padding: 1rem 1.1rem;
+      font-family: 'Tajawal', sans-serif; font-size: .95rem;
+      color: #1e293b; resize: vertical; transition: border-color .2s;
+      background: #fff;
+    }
+    textarea.text-input:focus { outline: none; border-color: #6366f1; }
+    textarea.text-input::placeholder { color: #b0bec5; }
+
+    .file-chosen {
+      margin-top: .75rem; font-size: .9rem; font-weight: 600;
+      color: #6366f1; text-align: right; min-height: 1.4rem;
+    }
+
+    .btn-primary {
+      margin-top: 1.5rem; width: 100%;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; border: none;
+      padding: .95rem 2rem; border-radius: 14px;
+      font-family: 'Tajawal', sans-serif; font-size: 1.05rem; font-weight: 800;
+      cursor: pointer; transition: all .25s;
+      box-shadow: 0 6px 20px rgba(79,70,229,.35);
+    }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(79,70,229,.45); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    /* ── Loading view ── */
+    .loading-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 65vh; text-align: center; padding: 2rem;
+    }
+    .spinner {
+      width: 62px; height: 62px;
+      border: 5px solid #e2e8f0; border-top-color: #6366f1;
+      border-radius: 50%; animation: spin .75s linear infinite;
+      margin-bottom: 1.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-size: 1.25rem; font-weight: 700; color: #334155; }
+    .loading-hint { font-size: .88rem; color: #94a3b8; margin-top: .5rem; }
+
+    /* ── Dashboard ── */
+    .dash-wrap { max-width: 880px; margin: 2rem auto 4rem; padding: 0 1.25rem; }
+
+    .info-bar {
+      background: #fff; border-radius: 14px; padding: .9rem 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .info-bar-name { font-weight: 700; color: #334155; font-size: .95rem; }
+    .btn-new {
+      background: none; border: 2px solid #6366f1; color: #6366f1;
+      padding: .45rem 1.1rem; border-radius: 10px;
+      font-family: 'Tajawal', sans-serif; font-size: .88rem; font-weight: 700;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-new:hover { background: #6366f1; color: #fff; }
+
+    .tabs {
+      background: #fff; border-radius: 16px; padding: .45rem;
+      display: flex; gap: .4rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .tab-btn {
+      flex: 1; padding: .75rem .5rem; border: none; border-radius: 12px;
+      background: none; font-family: 'Tajawal', sans-serif;
+      font-size: .95rem; font-weight: 700; color: #64748b;
+      cursor: pointer; transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: .35rem;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; box-shadow: 0 4px 14px rgba(79,70,229,.35);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn .25s ease; }
+
+    .card {
+      background: #fff; border-radius: 18px; padding: 2rem;
+      box-shadow: 0 2px 14px rgba(0,0,0,.06);
+    }
+
+    /* ── Markdown ── */
+    .md h2 { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin: 1.2rem 0 .5rem; border-bottom: 2px solid #e0e7ff; padding-bottom: .4rem; }
+    .md h3 { font-size: 1.05rem; font-weight: 700; color: #3730a3; margin: 1rem 0 .4rem; }
+    .md p { line-height: 1.85; color: #334155; margin: .5rem 0; }
+    .md ul, .md ol { margin: .5rem 0 .5rem 1.75rem; }
+    .md li { line-height: 1.8; color: #334155; margin: .3rem 0; }
+    .md strong { color: #1e293b; font-weight: 800; }
+    .md em { color: #7c3aed; font-style: normal; font-weight: 700; }
+    .md code { background: #f1f5f9; padding: .1rem .4rem; border-radius: 5px; font-size: .88em; }
+
+    /* ── Quiz ── */
+    .btn-gen {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; border: none; padding: .75rem 2rem;
+      border-radius: 12px; font-family: 'Tajawal', sans-serif;
+      font-size: 1rem; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79,70,229,.35);
+      transition: all .2s; margin-bottom: 1.5rem;
+    }
+    .btn-gen:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(79,70,229,.45); }
+    .btn-gen:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .quiz-item {
+      border: 2px solid #e2e8f0; border-radius: 14px; padding: 1.25rem;
+      margin-bottom: 1rem; transition: border-color .2s; background: #fafbff;
+    }
+    .quiz-item:hover { border-color: #c7d2fe; }
+    .quiz-q { font-weight: 700; color: #1e293b; line-height: 1.65; margin-bottom: .75rem; }
+    .btn-ans {
+      border: 1.5px solid #6366f1; background: none; color: #6366f1;
+      padding: .4rem 1.1rem; border-radius: 9px;
+      font-family: 'Tajawal', sans-serif; font-size: .85rem; font-weight: 700;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-ans:hover { background: #6366f1; color: #fff; }
+    .quiz-ans {
+      display: none; margin-top: .85rem; padding: .85rem 1.1rem;
+      background: #ede9fe; border-radius: 10px; color: #5b21b6;
+      font-size: .93rem; line-height: 1.7;
+    }
+    .quiz-ans.show { display: block; animation: fadeIn .2s ease; }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .empty-state .eicon { font-size: 3rem; margin-bottom: .75rem; }
+    .empty-state p { font-size: .93rem; }
+
+    /* ── Chat ── */
+    .chat-box {
+      min-height: 340px; max-height: 440px; overflow-y: auto;
+      border: 2px solid #e2e8f0; border-radius: 14px; padding: 1rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      background: #f8f9ff; margin-bottom: 1rem;
+    }
+    .msg { display: flex; gap: .75rem; }
+    .msg.user { flex-direction: row-reverse; }
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem; flex-shrink: 0;
+    }
+    .msg.user .avatar { background: #4f46e5; }
+    .msg.ai .avatar { background: #ede9fe; }
+    .bubble {
+      max-width: 78%; padding: .8rem 1.1rem; border-radius: 16px;
+      font-size: .93rem; line-height: 1.75;
+    }
+    .msg.user .bubble {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; border-bottom-left-radius: 4px;
+    }
+    .msg.ai .bubble {
+      background: #fff; color: #334155;
+      border: 1.5px solid #e2e8f0; border-bottom-right-radius: 4px;
+    }
+    .chat-row { display: flex; gap: .75rem; }
+    .chat-in {
+      flex: 1; border: 2px solid #e2e8f0; border-radius: 13px;
+      padding: .8rem 1rem; font-family: 'Tajawal', sans-serif;
+      font-size: .93rem; color: #1e293b; transition: border-color .2s; background: #fff;
+    }
+    .chat-in:focus { outline: none; border-color: #6366f1; }
+    .btn-send {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; border: none; padding: .8rem 1.5rem;
+      border-radius: 13px; font-family: 'Tajawal', sans-serif;
+      font-size: .95rem; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79,70,229,.35); transition: all .2s;
+    }
+    .btn-send:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-send:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .dots span { animation: blink 1.2s infinite; display: inline-block; }
+    .dots span:nth-child(2) { animation-delay: .2s; }
+    .dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+
+    @media (max-width: 600px) {
+      .tabs { flex-direction: column; }
+      .upload-card { padding: 2rem 1.25rem; }
+      .dash-wrap { padding: 0 .9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="logo-wrap">
+    <div class="logo-icon">📚</div>
+    <div>
+      <div class="logo-text">همّة</div>
+      <div class="logo-sub">رفيقك في رحلة المذاكرة</div>
+    </div>
+  </div>
+  <div class="header-badge">✨ مدعوم بالذكاء الاصطناعي</div>
+</header>
+
+<!-- ── View: Upload ── -->
+<div id="v-upload" class="view active">
+  <div class="upload-wrap">
+    <div class="upload-card">
+      <div class="upload-hero">🎓</div>
+      <h1 class="upload-title">ابدأ مذاكرتك الذكية</h1>
+      <p class="upload-desc">ارفع ملف دراستك أو الصق النص، وسأساعدك على الفهم العميق وتوليد الأسئلة والمناقشة</p>
+
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp" />
+        <div class="drop-icon">📂</div>
+        <div class="drop-label">اسحب الملف هنا أو انقر للاختيار</div>
+        <div class="drop-sub">PDF • صور (JPG, PNG) • ملفات نصية</div>
+      </div>
+
+      <div class="divider">أو</div>
+
+      <textarea
+        id="textInput"
+        class="text-input"
+        placeholder="الصق نص المادة الدراسية هنا مباشرة...&#10;مثال: محاضرة، مقالة، ملاحظات دراسية"
+      ></textarea>
+
+      <div class="file-chosen" id="fileChosen"></div>
+
+      <button class="btn-primary" id="startBtn" onclick="startAnalysis()" disabled>
+        ابدأ التحليل ✨
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── View: Loading ── -->
+<div id="v-loading" class="view">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-title" id="loadingText">جاري تحليل المادة...</div>
+    <div class="loading-hint">قد يستغرق هذا لحظات، تحلّ بالصبر 🌟</div>
+  </div>
+</div>
+
+<!-- ── View: Dashboard ── -->
+<div id="v-dash" class="view">
+  <div class="dash-wrap">
+
+    <div class="info-bar">
+      <div class="info-bar-name" id="dashName">📄 المادة المحملة</div>
+      <button class="btn-new" onclick="resetApp()">+ مادة جديدة</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('summary', this)">📝 ملخص وأفكار</button>
+      <button class="tab-btn" onclick="switchTab('quiz', this)">🎯 اختبر نفسك</button>
+      <button class="tab-btn" onclick="switchTab('chat', this)">💬 اسأل واستفسر</button>
+    </div>
+
+    <!-- Summary -->
+    <div id="tp-summary" class="tab-panel active">
+      <div class="card">
+        <div id="summaryContent" class="md"></div>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div id="tp-quiz" class="tab-panel">
+      <div class="card">
+        <button class="btn-gen" id="quizBtn" onclick="generateQuiz()">🎲 ولّد أسئلة جديدة</button>
+        <div id="quizContent">
+          <div class="empty-state">
+            <div class="eicon">🎯</div>
+            <p>اضغط على الزر أعلاه لتوليد أسئلة من المادة</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div id="tp-chat" class="tab-panel">
+      <div class="card">
+        <div class="chat-box" id="chatBox">
+          <div class="msg ai">
+            <div class="avatar">🤖</div>
+            <div class="bubble">مرحباً! قرأت المادة وأنا جاهز للإجابة على أسئلتك. اسألني عن أي شيء تريد فهمه أو توضيحه 😊</div>
+          </div>
+        </div>
+        <div class="chat-row">
+          <input class="chat-in" id="chatInput" type="text" placeholder="اكتب سؤالك هنا..." onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="btn-send" id="sendBtn" onclick="sendChat()">إرسال ➤</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── PDF.js worker ──────────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ── State ──────────────────────────────────────────────────
+let studyText   = '';      // extracted text (null if image)
+let studyImg    = null;    // { data: base64, type: 'image/jpeg' }
+let fileName    = '';
+let chatHistory = [];      // [{role,content}]
+
+// ── Helpers ────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tp-' + name).classList.add('active');
+}
+
+function resetApp() {
+  studyText = ''; studyImg = null; fileName = ''; chatHistory = [];
+  document.getElementById('fileInput').value = '';
+  document.getElementById('textInput').value = '';
+  document.getElementById('fileChosen').textContent = '';
+  document.getElementById('startBtn').disabled = true;
+  showView('v-upload');
+}
+
+// ── File selection & drag-drop ─────────────────────────────
+const fileInput = document.getElementById('fileInput');
+const textInput = document.getElementById('textInput');
+const startBtn  = document.getElementById('startBtn');
+const dropZone  = document.getElementById('dropZone');
+
+let _pendingFile = null;
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) selectFile(fileInput.files[0]);
+});
+textInput.addEventListener('input', () => {
+  startBtn.disabled = !textInput.value.trim() && !_pendingFile;
+});
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+});
+
+function selectFile(file) {
+  _pendingFile = file;
+  document.getElementById('fileChosen').textContent = '✅ ' + file.name;
+  startBtn.disabled = false;
+}
+
+// ── Start analysis ─────────────────────────────────────────
+async function startAnalysis() {
+  startBtn.disabled = true;
+  showView('v-loading');
+
+  try {
+    if (_pendingFile) {
+      document.getElementById('loadingText').textContent = 'جاري قراءة الملف...';
+      await readFile(_pendingFile);
+    } else if (textInput.value.trim()) {
+      studyText = textInput.value.trim();
+      fileName  = 'نص مباشر';
+    } else {
+      throw new Error('لا يوجد محتوى');
+    }
+
+    document.getElementById('loadingText').textContent = 'جاري التحليل بالذكاء الاصطناعي...';
+    const summary = await callClaude(buildAnalysisMessages(), systemPrompt());
+
+    renderDashboard(summary);
+  } catch (err) {
+    alert('حدث خطأ: ' + err.message);
+    showView('v-upload');
+    startBtn.disabled = false;
+  }
+}
+
+async function readFile(file) {
+  const t = file.type;
+  if (t === 'application/pdf') {
+    studyText = await extractPdf(file);
+    fileName  = file.name;
+  } else if (t.startsWith('image/')) {
+    studyImg = { data: await toBase64(file), type: t };
+    studyText = null;
+    fileName  = file.name;
+  } else {
+    studyText = await file.text();
+    fileName  = file.name;
+  }
+}
+
+async function extractPdf(file) {
+  const ab  = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let out   = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page    = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    out += content.items.map(x => x.str).join(' ') + '\n\n';
+  }
+  return out.trim();
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── System prompt ──────────────────────────────────────────
+function systemPrompt(extra) {
+  const base = `أنت مساعد دراسي ذكي اسمك "همّة". مهمتك مساعدة الطلاب العرب على الفهم العميق للمواد الدراسية.
+قواعد صارمة:
+- أجب دائماً بالعربية الفصحى المبسطة
+- استخدم التنسيق الجميل (عناوين ## وعناوين فرعية ### ونقاط وأرقام)
+- كن واضحاً وموجزاً وشجّع الطالب
+- إذا كانت المادة بلغة أخرى، اشرحها بالعربية`;
+  return extra ? base + '\n' + extra : base;
+}
+
+// ── Build messages ─────────────────────────────────────────
+function buildAnalysisMessages() {
+  const prompt = `اقرأ هذه المادة الدراسية وقدّم:
+## الملخص الشامل
+(3-5 جمل تغطي الفكرة الرئيسية)
+
+## الأفكار والنقاط الرئيسية
+(5-8 نقاط مهمة)
+
+## المصطلحات الأساسية
+(إذا وجدت، اشرحها باختصار)
+
+## نصيحة الدراسة
+(جملة أو اثنتان تحفّز الطالب)
+
+${studyText ? 'المادة:\n\n' + studyText.slice(0, 8000) : ''}`;
+
+  if (studyImg) {
+    return [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: studyImg.type, data: studyImg.data } },
+      { type: 'text', text: prompt }
+    ]}];
+  }
+  return [{ role: 'user', content: prompt }];
+}
+
+// ── Claude API call ────────────────────────────────────────
+async function callClaude(messages, sys) {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: sys,
+      messages
+    })
+  });
+
+  if (!res.ok) {
+    let errMsg = `خطأ ${res.status}`;
+    try { const d = await res.json(); errMsg = d.error?.message || d.error || errMsg; } catch {}
+    throw new Error(errMsg);
+  }
+
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+// ── Render dashboard ───────────────────────────────────────
+function renderDashboard(summary) {
+  document.getElementById('dashName').textContent = '📄 ' + fileName;
+  document.getElementById('summaryContent').innerHTML = marked.parse(summary);
+
+  document.getElementById('quizContent').innerHTML = `
+    <div class="empty-state">
+      <div class="eicon">🎯</div>
+      <p>اضغط على الزر أعلاه لتوليد أسئلة من المادة</p>
+    </div>`;
+
+  document.getElementById('chatBox').innerHTML = `
+    <div class="msg ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">مرحباً! قرأت المادة وأنا جاهز للإجابة على أسئلتك 😊</div>
+    </div>`;
+
+  chatHistory = [];
+
+  // Reset tabs
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === 0));
+
+  showView('v-dash');
+}
+
+// ── Quiz ───────────────────────────────────────────────────
+async function generateQuiz() {
+  const btn = document.getElementById('quizBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري التوليد...';
+
+  try {
+    const sys = systemPrompt(`عند توليد الأسئلة استخدم هذا التنسيق بالضبط لكل سؤال (لا تغيّره):
+[Q] نص السؤال
+[A] نص الإجابة الكاملة
+[END]`);
+
+    const txt = studyText ? `بناءً على المادة التالية:\n\n${studyText.slice(0, 6000)}\n\nأنشئ 8 أسئلة دراسية متنوعة (فهم، تحليل، تطبيق) مع إجاباتها.`
+                           : 'أنشئ 8 أسئلة دراسية متنوعة مع إجاباتها بناءً على الصورة الدراسية.';
+
+    let messages;
+    if (studyImg) {
+      messages = [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: studyImg.type, data: studyImg.data } },
+        { type: 'text', text: txt }
+      ]}];
+    } else {
+      messages = [{ role: 'user', content: txt }];
+    }
+
+    const result = await callClaude(messages, sys);
+    renderQuiz(result);
+  } catch (err) {
+    alert('خطأ في توليد الأسئلة: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🎲 ولّد أسئلة جديدة';
+  }
+}
+
+function renderQuiz(text) {
+  const items   = text.split('[END]').filter(b => b.trim());
+  const container = document.getElementById('quizContent');
+
+  const htmlParts = items.map((block, idx) => {
+    const qm = block.match(/\[Q\]\s*([\s\S]+?)\s*\[A\]/);
+    const am = block.match(/\[A\]\s*([\s\S]+?)$/);
+    if (!qm || !am) return '';
+    return `
+      <div class="quiz-item">
+        <div class="quiz-q">السؤال ${idx + 1}: ${qm[1].trim()}</div>
+        <button class="btn-ans" onclick="toggleAns(this)">اعرض الإجابة</button>
+        <div class="quiz-ans">${am[1].trim()}</div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = htmlParts || `<div class="empty-state"><div class="eicon">❌</div><p>لم يتم توليد أسئلة. حاول مجدداً.</p></div>`;
+}
+
+function toggleAns(btn) {
+  const a    = btn.nextElementSibling;
+  const show = a.classList.toggle('show');
+  btn.textContent = show ? 'إخفاء الإجابة' : 'اعرض الإجابة';
+}
+
+// ── Chat ───────────────────────────────────────────────────
+async function sendChat() {
+  const input   = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const msg     = input.value.trim();
+  if (!msg) return;
+
+  sendBtn.disabled = true;
+  input.value = '';
+  appendMsg('user', msg);
+
+  const typingId = 'typing-' + Date.now();
+  appendMsg('ai', '<span class="dots"><span>●</span><span>●</span><span>●</span></span>', typingId);
+
+  try {
+    const sys = systemPrompt(
+      studyText ? `المادة الدراسية للطالب:\n\n${studyText.slice(0, 6000)}` : ''
+    );
+
+    let messages;
+
+    if (chatHistory.length === 0 && studyImg) {
+      // First message — include the image
+      messages = [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: studyImg.type, data: studyImg.data } },
+          { type: 'text', text: msg }
+        ]
+      }];
+    } else {
+      chatHistory.push({ role: 'user', content: msg });
+      messages = [...chatHistory];
+    }
+
+    const reply = await callClaude(messages, sys);
+
+    // Update history (use plain text for tracking)
+    if (chatHistory.length === 0 || chatHistory[chatHistory.length - 1].role !== 'user') {
+      chatHistory.push({ role: 'user', content: msg });
+    }
+    chatHistory.push({ role: 'assistant', content: reply });
+
+    const el = document.getElementById(typingId);
+    if (el) el.querySelector('.bubble').innerHTML = marked.parse(reply);
+
+  } catch (err) {
+    const el = document.getElementById(typingId);
+    if (el) el.querySelector('.bubble').textContent = '⚠️ حدث خطأ، حاول مجدداً.';
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+    scrollChat();
+  }
+}
+
+function appendMsg(role, html, id) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (id) div.id = id;
+  div.innerHTML = `
+    <div class="avatar">${role === 'user' ? '👤' : '🤖'}</div>
+    <div class="bubble">${html}</div>`;
+  box.appendChild(div);
+  scrollChat();
+}
+
+function scrollChat() {
+  const b = document.getElementById('chatBox');
+  b.scrollTop = b.scrollHeight;
+}
+</script>
+</body>
+</html>
